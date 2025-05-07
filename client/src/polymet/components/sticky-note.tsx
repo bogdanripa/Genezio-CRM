@@ -82,7 +82,26 @@ export default function StickyNote({
         <h3 className="font-medium mb-1">{note.title}</h3>
         {note.description && (
           <p className="text-sm text-muted-foreground mb-2">
-            {note.description}
+            {note.description.split('\n').map((line, i) => (
+              <span key={i}>
+                {line.split(/(https?:\/\/[^\s]+)/g).map((part, j) =>
+                  part.match(/^https?:\/\/[^\s]+$/) ? (
+                    <a
+                      key={j}
+                      href={part}
+                      className="text-blue-600 underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {part}
+                    </a>
+                  ) : (
+                    <>{part}</>
+                  )
+                )}
+                <br />
+              </span>
+            ))}
           </p>
         )}
         <div className="text-xs text-muted-foreground">{formattedDate}</div>

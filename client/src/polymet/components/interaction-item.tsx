@@ -143,8 +143,27 @@ export default function InteractionItem({
         <h4 className="font-medium">{interaction.title}</h4>
         {interaction.description && (
           <p className="text-sm text-muted-foreground mt-1">
-            {interaction.description}
-          </p>
+          {interaction.description.split('\n').map((line, i) => (
+            <span key={i}>
+              {line.split(/(https?:\/\/[^\s]+)/g).map((part, j) =>
+                /^https?:\/\/[^\s]+$/.test(part) ? (
+                  <a
+                    key={j}
+                    href={part}
+                    className="text-blue-600 underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {part}
+                  </a>
+                ) : (
+                  <>{part}</>
+                )
+              )}
+              <br />
+            </span>
+          ))}
+        </p>
         )}
         {interaction.metadata?.meetingId && (
           <div className="mt-2 text-sm">
