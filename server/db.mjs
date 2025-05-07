@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: true,
     },
+    address: {
+      type: String,
+      required: false,
+    },
   });
   
   const Users = mongoose.model('User', userSchema);
@@ -84,6 +88,7 @@ const userSchema = new mongoose.Schema({
     },
     name: String,
     description: String,
+    domain: String,
     industry: String,
     website: String,
     status: {

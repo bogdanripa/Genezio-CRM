@@ -12,6 +12,20 @@ async function checkAuth(req, res, next) {
   try {
     const token = req.headers.authorization.split(" ")[1];
     const userInfo = await AuthService.getInstance().userInfoForToken(token);
+
+    if (!userInfo.address) {
+      const domain = userInfo.email.split("@")[1];
+      await Users.updateOne(
+        { userId: userInfo.userId },
+        {
+          $set: {
+            address: domain,
+          },
+        }
+      );
+      userInfo.address = domain;
+    }
+
     req.userInfo = userInfo;
     next();
   } catch (error) {
@@ -22,8 +36,8 @@ async function checkAuth(req, res, next) {
 }
 
 async function getAllusers(req) {
-  const emailDomain = req.userInfo.email.split("@")[1];
-  const users = await Users.find({email: { $regex: `@${emailDomain}$` }});
+  const address = req.userInfo.address;
+  const users = await Users.find({address});
   if (!users) return [];
   // replace userId with id
   users.forEach((user) => {
@@ -34,15 +48,15 @@ async function getAllusers(req) {
 }
 
 async function getAllAccounts(req) {
-  const emailDomain = req.userInfo.email.split("@")[1];
-  return Accounts.find({ "owner.email": { $regex: `@${emailDomain}$` } });
+  const address = req.userInfo.address;
+  return Accounts.find({ "domain": address});
 }
 
 async function getAccount(req, accountId) {
-  const emailDomain = req.userInfo.email.split("@")[1];
+  const address = req.userInfo.address;
   const account = await Accounts.findOne({ 
     id: accountId, 
-    "owner.email": { $regex: `@${emailDomain}$` }
+    "domain": address
   });
   if (!account) return null;
   return account;
@@ -76,6 +90,7 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
     description: req.body.description,
     industry: req.body.industry,
     status: req.body.status,
+    domain: req.userInfo.address,
     owner: {
       id: req.userInfo.userId,
       name: req.userInfo.name,
