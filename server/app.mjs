@@ -242,7 +242,7 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
   const newInteraction = {
     id: crypto.randomUUID(),
     type: req.body.type,
-    timestamp: new Date().toISOString(),
+    timestamp: req.body.timestamp,
     createdBy: {
       id: req.userInfo.userId,
       name: req.userInfo.name,

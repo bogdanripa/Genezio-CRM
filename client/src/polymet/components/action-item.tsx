@@ -61,7 +61,7 @@ export default function ActionItemComponent({
               )}
               <h3
                 className={cn(
-                  "font-medium",
+                  "font-medium text-sm", 
                   item.completed && "line-through text-muted-foreground"
                 )}
               >
