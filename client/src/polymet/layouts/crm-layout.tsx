@@ -1,12 +1,12 @@
 import { useState, useEffect, use } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import {
   HomeIcon,
   UsersIcon,
   MenuIcon,
   SearchIcon,
-  BellIcon,
-  UserIcon,
   XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,6 @@ import {
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { AuthService } from "@genezio/auth";
-import md5 from "md5";
-
-function getGravatarUrl(email: string, size = 32) {
-  const hash = md5(email.trim().toLowerCase());
-  return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
-}
 
 export default function CrmLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -37,7 +31,7 @@ export default function CrmLayout({ children }) {
 
   if (!currentUser) {
     AuthService.getInstance().userInfo().then((user) => {
-      setCurrentUser({...user, avatar: getGravatarUrl(user.email, 32)});
+      setCurrentUser(user);
     });
   }
 
@@ -178,15 +172,15 @@ export default function CrmLayout({ children }) {
                   size="icon"
                   className="rounded-full overflow-hidden"
                 >
-                  {currentUser?.avatar ? (
-                    <img
-                      src={currentUser.avatar}
-                      alt={currentUser.name}
-                      className="h-8 w-8 rounded-full"
-                    />
-                  ) : (
-                    <UserIcon className="h-5 w-5" />
-                  )}
+                  <Avatar className="h-12 w-12">
+                    {currentUser?.avatar ? (
+                      <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                    ) : (
+                      <AvatarFallback>
+                        {currentUser?.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
