@@ -24,7 +24,7 @@ frontend:
         start:
             - npm install
             - npm run dev
-    subdomain: Genezio-CRM
+    subdomain: genezio-crm
 name: Genezio-CRM
 region: eu-central-1
 services:
