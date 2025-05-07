@@ -160,11 +160,13 @@ export default function KeyContactsCard({
                     <div className="text-sm text-muted-foreground">
                       {employee.role}
                     </div>
-                    <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-                      <div className="flex items-center">
-                        <MailIcon className="mr-1 h-3 w-3" />
-                        <span className="truncate">{employee.email}</span>
-                      </div>
+                      <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
+                      {employee.email && (
+                        <div className="flex items-center">
+                          <MailIcon className="mr-1 h-3 w-3" />
+                          <span className="truncate">{employee.email}</span>
+                        </div>
+                      )}
                       {employee.phone && (
                         <div className="flex items-center">
                           <PhoneIcon className="mr-1 h-3 w-3" />
