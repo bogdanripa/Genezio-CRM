@@ -45,7 +45,7 @@ export default function TeamMemberDialog({
     const getAvailableUsers = async () => {
       const allUsers = await getUsers();
       const au = allUsers.filter(
-        (user) => !currentTeamMemberIds.includes(user.id)
+        (user) => !currentTeamMemberIds.includes(user.userId)
       );
       setAvailableUsers(au);
     }
@@ -79,7 +79,7 @@ export default function TeamMemberDialog({
               <SelectContent>
                 {availableUsers.length > 0 ? (
                   availableUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
+                    <SelectItem key={user.userId} value={user.userId}>
                       {user.name} ({user.email})
                     </SelectItem>
                   ))
