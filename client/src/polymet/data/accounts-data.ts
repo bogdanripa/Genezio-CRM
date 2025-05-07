@@ -163,3 +163,8 @@ export const unStickNote = async(accountId: string, interactionId: string): Prom
   const response = await axios.put(`/accounts/${accountId}/interactions/${interactionId}/unstick`);
   return response.data;
 }
+
+export const getLatestInteractions = async(): Promise<any[]> => {
+  const response = await axios.get('/interactions/latest');
+  return response.data;
+}

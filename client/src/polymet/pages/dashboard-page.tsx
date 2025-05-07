@@ -12,6 +12,7 @@ import { PlusIcon } from "lucide-react";
 import {
   Account,
   getAccounts,
+  getLatestInteractions,
 } from "@/polymet/data/accounts-data";
 import AccountMetrics from "@/polymet/components/account-metrics";
 import AccountStatusChart from "@/polymet/components/account-status-chart";
@@ -19,6 +20,7 @@ import AccountStatusChart from "@/polymet/components/account-status-chart";
 export default function DashboardPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [latestInteractions, setLatestInteractions] = useState<any[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -26,6 +28,7 @@ export default function DashboardPage() {
       try {
         const userAccounts = await getAccounts();
         setAccounts(userAccounts);
+        setLatestInteractions(await getLatestInteractions());
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -76,9 +79,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {accounts.slice(0, 3).map((account) => (
+                {latestInteractions.map((interaction) => (
                   <div
-                    key={account.id}
                     className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0"
                   >
                     <div className="bg-primary/10 rounded-full p-2">
@@ -86,16 +88,10 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className="font-medium">
-                        {account.owner.name}{" "}
-                        {account.interactions[0]?.type === "meeting"
-                          ? "scheduled a meeting with"
-                          : account.interactions[0]?.type === "email"
-                            ? "sent an email to"
-                            : "updated"}{" "}
-                        {account.name}
+                        {interaction.text}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        on {new Date(account.updatedAt).toLocaleDateString()}
+                        on {new Date(interaction.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>

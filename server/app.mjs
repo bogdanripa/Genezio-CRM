@@ -248,6 +248,7 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
     id: crypto.randomUUID(),
     type: req.body.type,
     timestamp: req.body.timestamp,
+    createdAt: new Date(),
     createdBy: {
       id: req.userInfo.userId,
       name: req.userInfo.name,
@@ -311,6 +312,26 @@ app.put("/accounts/:id/interactions/:interactionId/unstick", checkAuth, async fu
 
   await account.save();
   res.send(interaction);
+});
+
+app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
+  const accounts = await getAllAccounts(req);
+  const interactionsAcrossAccounts = [];
+  accounts.forEach((account) => {
+    account.interactions.forEach((interaction) => {
+      interactionsAcrossAccounts.push({
+        createdAt: interaction.createdAt,
+        text: `${interaction.createdBy.name} added a ${interaction.type} to ${account.name}`,
+      });
+    });
+  });
+
+  interactionsAcrossAccounts.sort((a, b) => {
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  const latestInteractions = interactionsAcrossAccounts.slice(0, 5);
+  res.send(latestInteractions);
 });
 
 app.listen(8080, () => {

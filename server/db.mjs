@@ -58,6 +58,7 @@ const userSchema = new mongoose.Schema({
     type: {
       type: String,
     },
+    createdAt: Date,
     timestamp: Date,
     createdBy: userSummarySchema,
     title: String,
