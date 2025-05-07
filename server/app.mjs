@@ -39,11 +39,6 @@ async function getAllusers(req) {
   const address = req.userInfo.address;
   const users = await Users.find({address});
   if (!users) return [];
-  // replace userId with id
-  users.forEach((user) => {
-    user.id = user.userId;
-    delete user.userId;
-  });
   return users;
 }
 
@@ -78,7 +73,6 @@ app.get("/accounts/:id", checkAuth, async function (req, res, _next) {
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
-  // replace userId with id
   res.send(account);
 });
 
@@ -92,7 +86,7 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
     status: req.body.status,
     domain: req.userInfo.address,
     owner: {
-      id: req.userInfo.userId,
+      userId: req.userInfo.userId,
       name: req.userInfo.name,
       email: req.userInfo.email,
     },
@@ -139,8 +133,6 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
   const newMember = await Users.findOne({
     userId: req.body.userId
   });
-  newMember.id = newMember.userId;
-  delete newMember.userId;
   account.teamMembers.push(newMember);
   await account.save();
   res.status(201).send(newMember);
@@ -154,7 +146,7 @@ app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req
     return res.status(404).send({ message: "Account not found" });
   }
 
-  const memberIndex = account.teamMembers.findIndex((member) => member.id === memberId);
+  const memberIndex = account.teamMembers.findIndex((member) => member.userId === memberId);
   if (memberIndex === -1) {
     return res.status(404).send({ message: "Member not found" });
   }
@@ -177,9 +169,7 @@ app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, 
   if (!newOwner) {
     return res.status(404).send({ message: "User not found" });
   }
-  newOwner.id = newOwner.userId;
-  delete newOwner.userId;
-
+  
   account.owner = newOwner;
   await account.save();
   res.status(204).send();

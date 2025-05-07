@@ -35,8 +35,8 @@ export default function TransferOwnershipDialog({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   // Filter out the current owner and get team members who could become owner
-  const eligibleTeamMembers = account.teamMembers.filter(
-    (member) => member.id !== account.owner.id
+  const eligibleTeamMembers = account.teamMembers?.filter(
+    (member) => member.userId !== account.owner?.userId
   );
 
   const handleConfirm = () => {
@@ -75,7 +75,7 @@ export default function TransferOwnershipDialog({
               <SelectContent>
                 {eligibleTeamMembers.length > 0 ? (
                   eligibleTeamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
+                    <SelectItem key={member.userId} value={member.userId}>
                       {member.name} ({member.email})
                     </SelectItem>
                   ))

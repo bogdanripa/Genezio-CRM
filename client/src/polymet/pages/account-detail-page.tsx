@@ -131,7 +131,7 @@ export default function AccountDetailPage() {
     removeTeamMemberFromAccount(accountId, userId).then(() => {
       setAccount({
         ...account,
-        teamMembers: account.teamMembers.filter((member) => member.id !== userId),
+        teamMembers: account.teamMembers.filter((member) => member.userId !== userId),
       });
 
       toast({
@@ -142,7 +142,7 @@ export default function AccountDetailPage() {
   };
 
   const handleTransferOwnership = (userId: string) => {
-    const newOwner = account.teamMembers.find((member) => member.id === userId);
+    const newOwner = account.teamMembers.find((member) => member.userId === userId);
     if (!newOwner) return;
 
     transferAccountOwnership(accountId, userId).then(() => {

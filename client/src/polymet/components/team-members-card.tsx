@@ -38,7 +38,7 @@ export default function TeamMembersCard({
     useState(false);
 
   // Get current team member IDs for filtering in the add member dialog
-  const currentTeamMemberIds = account.teamMembers.map((member) => member.id);
+  const currentTeamMemberIds = account.teamMembers.map((member) => member.userId);
 
   return (
     <Card>
@@ -96,11 +96,11 @@ export default function TeamMembersCard({
         </div>
 
         {/* Team Members */}
-        {account.teamMembers
-          .filter((member) => member.id !== account.owner.id)
+        {account.teamMembers?
+          .filter((member) => member.userId !== account.owner?.userId)
           .map((member) => (
             <div
-              key={member.id}
+              key={member.userId}
               className="flex items-center gap-4 p-4 rounded-lg border"
             >
               <Avatar>
@@ -130,7 +130,7 @@ export default function TeamMembersCard({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     className="text-destructive"
-                    onClick={() => onRemoveMember(member.id)}
+                    onClick={() => onRemoveMember(member.userId)}
                   >
                     Remove Member
                   </DropdownMenuItem>

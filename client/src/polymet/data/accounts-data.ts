@@ -56,13 +56,13 @@ export type Account = {
   updatedAt?: string;
   status: string;
   owner?: {
-    id: string;
+    userId: string;
     name: string;
     email: string;
     avatar?: string;
   };
   teamMembers?: {
-    id: string;
+    userId: string;
     name: string;
     email: string;
     avatar?: string;

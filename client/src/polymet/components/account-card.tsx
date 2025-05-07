@@ -83,7 +83,7 @@ export default function AccountCard({ account }: AccountCardProps) {
           <div className="flex -space-x-2">
             {account.teamMembers.slice(0, 3).map((member) => (
               <Avatar
-                key={member.id}
+                key={member.userId}
                 className="border-2 border-background h-8 w-8"
               >
                 {member.avatar ? (
