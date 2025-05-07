@@ -57,10 +57,8 @@ export default function AccountCard({ account }: AccountCardProps) {
         </CardHeader>
         <CardContent className="p-4 pt-2 pb-2">
           <div className="text-sm text-muted-foreground">
-            {account.description ? (
+            {account.description && (
               <p className="line-clamp-2">{account.description}</p>
-            ) : (
-              <p className="italic">No description available</p>
             )}
           </div>
           <div className="mt-4 space-y-2">

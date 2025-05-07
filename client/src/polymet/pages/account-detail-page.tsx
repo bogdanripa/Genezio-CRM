@@ -290,14 +290,16 @@ export default function AccountDetailPage() {
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Account Details</h3>
                 <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground">
-                      Description
-                    </h4>
-                    <p className="mt-1">
-                      {account.description || "No description available"}
-                    </p>
-                  </div>
+                  { account.description && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground">
+                        Description
+                      </h4>
+                      <p className="mt-1">
+                        {account.description || "No description available"}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
