@@ -47,7 +47,7 @@ export default function ContactDetailDialog({
   }, [contact]);
 
   const handleSave = () => {
-    if (!name || !role || !email) return;
+    if (!name || !role) return;
 
     onSave({
       id: contact?.id || "",
@@ -118,7 +118,7 @@ export default function ContactDetailDialog({
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="email" className="text-right">
-              Email*
+              Email
             </Label>
             <Input
               id="email"
