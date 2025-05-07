@@ -96,8 +96,7 @@ export default function TeamMembersCard({
         </div>
 
         {/* Team Members */}
-        {account.teamMembers?
-          .filter((member) => member.userId !== account.owner?.userId)
+        {account.teamMembers?.filter((member) => member.userId !== account.owner?.userId)
           .map((member) => (
             <div
               key={member.userId}
