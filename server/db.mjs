@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
     name: String,
     email: String,
   }, {
-    timestamps: true
+    _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
   
   const employeeSchema = new mongoose.Schema({
@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
     phone: String,
     meetings: [String],
   }, {
-    timestamps: true
+    _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
   
   const actionItemSchema = new mongoose.Schema({
@@ -66,12 +66,14 @@ const userSchema = new mongoose.Schema({
     actionItems: [actionItemSchema],
     isSticky: Boolean,
   }, {
-    timestamps: true
+    _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
   
   const metricsSchema = new mongoose.Schema({
     contractValue: Number,
     probability: Number,
+  }, {
+    _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
   
   const accountSchema = new mongoose.Schema({

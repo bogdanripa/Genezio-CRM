@@ -21,8 +21,9 @@ async function checkAuth(req, res, next) {
   }
 }
 
-async function getAllusers() {
-  const users = await Users.find();
+async function getAllusers(req) {
+  const emailDomain = req.userInfo.email.split("@")[1];
+  const users = await Users.find({email: { $regex: `@${emailDomain}$` }});
   if (!users) return [];
   // replace userId with id
   users.forEach((user) => {
@@ -32,21 +33,34 @@ async function getAllusers() {
   return users;
 }
 
+async function getAllAccounts(req) {
+  const emailDomain = req.userInfo.email.split("@")[1];
+  return Accounts.find({ "owner.email": { $regex: `@${emailDomain}$` } });
+}
 
+async function getAccount(req, accountId) {
+  const emailDomain = req.userInfo.email.split("@")[1];
+  const account = await Accounts.findOne({ 
+    id: accountId, 
+    "owner.email": { $regex: `@${emailDomain}$` }
+  });
+  if (!account) return null;
+  return account;
+}
 
-app.get("/users", checkAuth, async function (_req, res, _next) {
-  const users = await getAllusers();
+app.get("/users", checkAuth, async function (req, res, _next) {
+  const users = await getAllusers(req);
   res.send(users);
 });
 
 app.get("/accounts/", checkAuth, async function (req, res, _next) {
-  const accounts = await Accounts.find();
+  const accounts = await getAllAccounts(req);
   res.send(accounts);
 });
 
 app.get("/accounts/:id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -75,7 +89,7 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
 
 app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -92,16 +106,17 @@ app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
 
 app.delete("/accounts/:id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const response = await Accounts.deleteOne({ id: accountId });
-  if (response.deletedCount === 0) {
+  const account = await getAccount(req, accountId);
+  if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
+  const response = await Accounts.deleteOne({ id: accountId });
   res.status(204).send();
 });
 
 app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -119,7 +134,7 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
 app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const memberId = req.params.memberId;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -136,7 +151,7 @@ app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req
 
 app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -157,7 +172,7 @@ app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, 
 
 app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -180,7 +195,7 @@ app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
 app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const contactId = req.params.contactId;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -202,7 +217,7 @@ app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res
 app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const contactId = req.params.contactId;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -219,7 +234,7 @@ app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, 
 
 app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -249,7 +264,7 @@ app.put("/accounts/:id/interactions/:interactionId/actionItems/:actionItemId", c
   const accountId = req.params.id;
   const interactionId = req.params.interactionId;
   const actionItemId = req.params.actionItemId;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
@@ -277,7 +292,7 @@ app.put("/accounts/:id/interactions/:interactionId/actionItems/:actionItemId", c
 app.put("/accounts/:id/interactions/:interactionId/unstick", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const interactionId = req.params.interactionId;
-  const account = await Accounts.findOne({ id: accountId });
+  const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
