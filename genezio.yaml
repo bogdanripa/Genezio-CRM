@@ -15,8 +15,6 @@ backend:
 frontend:
     environment:
         VITE_API_URL: ${{ backend.functions.express-auth-starter.url }}
-        VITE_AUTH_REGION: ${{services.authentication.region}}
-        VITE_AUTH_TOKEN: ${{services.authentication.token}}
     name: express-auth-client
     path: ./client
     publish: ./dist
@@ -30,16 +28,8 @@ frontend:
 name: Genezio-CRM
 region: eu-central-1
 services:
-    authentication:
-        database:
-            name: my-mongo-db
-        providers:
-            email: true
-        settings:
-            resetPassword:
-                redirectUrl: https://${{frontend.express-auth-client.subdomain}}.app.genez.io/reset
     databases:
-        - name: my-mongo-db
-          region: us-east-1
+        - name: genezio-crm
+          region: eu-central-1
           type: mongo-atlas
 yamlVersion: 2

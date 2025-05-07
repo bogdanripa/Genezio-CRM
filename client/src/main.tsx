@@ -1,49 +1,24 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
-import './index.css'
-import SecretView from './routes/secret';
-import Login from './routes/login';
-import Signup from './routes/signup';
-import ForgetPasswordForm from "./routes/forget.tsx";
+import React from "react";
+import * as ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
 
-import {AuthService} from "@genezio/auth";
-import ResetPasswordForm from "./routes/reset.tsx";
+// Make React and ReactDOM globally available immediately (not in useEffect)
+window.React = React;
+window.ReactDOM = ReactDOM;
 
-const authToken = import.meta.env.VITE_AUTH_TOKEN;
-const region = import.meta.env.VITE_AUTH_REGION;
+function Main() {
+  return (
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
 
-AuthService.getInstance().setTokenAndRegion(authToken, region);
+const root = createRoot(document.getElementById("root") as HTMLElement);
+root.render(<Main />);
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <SecretView/>,
-  },
-  {
-    path: "/login",
-    element: <Login/>,
-  },
-  {
-    path: "/signup",
-    element: <Signup/>,
-  },
-  {
-    path: "/reset",
-    element: <ResetPasswordForm/>,
-  },
-  {
-    path: "/forget-password",
-    element: <ForgetPasswordForm/>
-  }
-]);
-
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-      <RouterProvider router={router}/>
-  </React.StrictMode>,
-)
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
