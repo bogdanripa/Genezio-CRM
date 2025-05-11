@@ -64,7 +64,24 @@ app.get("/users", checkAuth, async function (req, res, _next) {
 
 app.get("/accounts/", checkAuth, async function (req, res, _next) {
   const accounts = await getAllAccounts(req);
-  res.send(accounts);
+  // keep only name, industry, status, description, owner, number of contacts, number of employees, last updated date
+  const filteredAccounts = accounts.map((account) => {
+    return {
+      id: account.id,
+      name: account.name,
+      industry: account.industry,
+      status: account.status,
+      description: account.description,
+      owner: account.owner,
+      numberOfTeamMembers: account.teamMembers.length,
+      numberOfContacts: account.employees.length,
+      numberOfInteractions: account.interactions.length,
+      lastInteractionDate: account.interactions.length > 0 ? account.interactions[0].timestamp : null,
+      updatedAt: account.updatedAt || account.createdAt,
+      metrics: account.metrics,
+    };
+  });
+  res.send(filteredAccounts);
 });
 
 app.get("/accounts/:id", checkAuth, async function (req, res, _next) {

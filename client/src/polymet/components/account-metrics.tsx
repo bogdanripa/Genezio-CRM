@@ -5,11 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Account } from "@/polymet/data/accounts-data";
+import { SimpleAccount } from "@/polymet/data/accounts-data";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 interface AccountMetricsProps {
-  accounts: Account[];
+  accounts: SimpleAccount[];
 }
 
 export default function AccountMetrics({ accounts }: AccountMetricsProps) {

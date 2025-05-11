@@ -10,12 +10,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PlusIcon, SearchIcon } from "lucide-react";
-import { Account, getAccounts} from "@/polymet/data/accounts-data";
+import { SimpleAccount, getAccounts} from "@/polymet/data/accounts-data";
 import AccountCard from "@/polymet/components/account-card";
 
 export default function AccountsPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [filteredAccounts, setFilteredAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<SimpleAccount[]>([]);
+  const [filteredAccounts, setFilteredAccounts] = useState<SimpleAccount[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +48,6 @@ export default function AccountsPage() {
       result = result.filter(
         (account) =>
           account.name.toLowerCase().includes(query) ||
-          account.website.toLowerCase().includes(query) ||
           (account.description &&
             account.description.toLowerCase().includes(query)) ||
           (account.industry && account.industry.toLowerCase().includes(query))

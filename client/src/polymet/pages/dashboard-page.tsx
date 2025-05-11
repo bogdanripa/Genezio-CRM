@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { PlusIcon } from "lucide-react";
 import {
-  Account,
+  SimpleAccount,
   getAccounts,
   getLatestInteractions,
 } from "@/polymet/data/accounts-data";
@@ -18,7 +18,7 @@ import AccountMetrics from "@/polymet/components/account-metrics";
 import AccountStatusChart from "@/polymet/components/account-status-chart";
 
 export default function DashboardPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<SimpleAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [latestInteractions, setLatestInteractions] = useState<any[]>([]);
 

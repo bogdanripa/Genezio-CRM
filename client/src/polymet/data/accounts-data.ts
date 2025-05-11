@@ -35,15 +35,6 @@ export type AccountInteraction = {
   isSticky?: boolean;
 };
 
-export type AccountStatus =
-  | "lead"
-  | "prospect"
-  | "qualified"
-  | "negotiation"
-  | "closed-won"
-  | "closed-lost"
-  | "churned";
-
 export type Account = {
   id?: string;
   name: string;
@@ -75,6 +66,24 @@ export type Account = {
   };
 };
 
+export type SimpleAccount = {
+  id: string;
+  name: string;
+  status: string;
+  description: string;
+  industry: string;
+  numberOfContacts: number;
+  numberOfInteractions: number;
+  numberOfTeamMembers: number;
+  updatedAt: Date;
+  lastInteractionDate?: Date;
+  metrics?: {
+    contractValue?: number;
+    probability?: number;
+  }
+}
+
+
 export type User = {
   id: string;
   name: string;
@@ -84,15 +93,10 @@ export type User = {
 // Mock users data
 let USERS: User[] | undefined = undefined;
 
-// Mock accounts data
-let ACCOUNTS: Account[] | undefined = undefined;;
-
 // Helper function to filter accounts by domain
-export const getAccounts = async (): Promise<Account[]> => {
-  if (ACCOUNTS) return ACCOUNTS;
+export const getAccounts = async (): Promise<SimpleAccount[]> => {
   const response = await axios.get('/accounts');
-  ACCOUNTS = response.data as Account[];
-  return ACCOUNTS;
+  return response.data as SimpleAccount[];
 };
 
 // Helper function to get an account by ID
@@ -115,19 +119,16 @@ export const getUsers = async (): Promise<User[]> => {
 
 export const createAccount = async (account: Account): Promise<Account> => {
   const response = await axios.post('/accounts', account);
-  ACCOUNTS = undefined;
   return response.data as Account;
 }
 
 export const updateAccount = async (account: Account): Promise<Account> => {
   const response = await axios.put(`/accounts/${account.id}`, account);
-  ACCOUNTS = undefined;
   return response.data as Account;
 }
 
 export const deleteAccount = async (id: string): Promise<void> => {
   await axios.delete(`/accounts/${id}`);
-  ACCOUNTS = undefined;
 }
 
 export const addTeamMemberToAccount = async(accountId: string, userId: string): Promise<void> => {
