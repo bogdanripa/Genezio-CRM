@@ -11,6 +11,8 @@ import {
   removeTeamMemberFromAccount,
   transferAccountOwnership,
   addInteractionToAccount,
+  updateInteractionInAccount,
+  deleteInteractionFromAccount,
   unStickNote
 } from "@/polymet/data/accounts-data";
 import AccountStatusBadge from "@/polymet/components/account-status-badge";
@@ -19,7 +21,7 @@ import StickyNote from "@/polymet/components/sticky-note";
 import TeamMembersCard from "@/polymet/components/team-members-card";
 import KeyContactsCard from "@/polymet/components/key-contacts-card";
 import AddInteractionButton from "@/polymet/components/add-interaction-button";
-import AddInteractionDialog from "@/polymet/components/add-interaction-dialog";
+import AddEditInteractionDialog from "@/polymet/components/add-edit-interaction-dialog";
 import AccountEditButton from "@/polymet/components/account-edit-button";
 import ActionItemsCard from "@/polymet/components/action-items-card";
 import {
@@ -34,6 +36,7 @@ export default function AccountDetailPage() {
   const { accountId = "" } = useParams();
   const [addInteractionDialogOpen, setAddInteractionDialogOpen] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
+  const [editInteraction, setEditInteraction] = useState<AccountInteraction | undefined>(undefined);
 
   useEffect(() => {
     const fetchAccount = async () => {
@@ -42,7 +45,16 @@ export default function AccountDetailPage() {
     fetchAccount();
   }, [accountId]);
 
-  if (!account) {
+  if (account === null) {
+    return (
+      <div className="container mx-auto py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Loading...</h1>
+        <p className="mb-4">Fetching account details, please wait.</p>
+      </div>
+    );
+  }
+
+  if (!account?.id) {
     return (
       <div className="container mx-auto py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Account not found</h1>
@@ -98,6 +110,54 @@ export default function AccountDetailPage() {
       toast({
         title: "Interaction Added",
         description: `${interaction.type?.charAt(0).toUpperCase() + interaction.type?.slice(1).replace("_", " ")} has been added`,
+      });
+    });
+  };
+
+  const handleEditInteraction = (interaction: AccountInteraction) => {
+      updateInteractionInAccount(accountId, interaction).then((updatedInteraction) => {
+        const updatedInteractions = account.interactions.map((i) =>
+          i.id === updatedInteraction.id ? updatedInteraction : i
+        );
+
+        // If this is a status change interaction, update the account status
+        if (updatedInteraction.type === "status_change" && updatedInteraction.title) {
+          const statusMatch = updatedInteraction.title.match(/to\s+(\S+)$/);
+          if (statusMatch && statusMatch[1]) {
+            const newStatus = statusMatch[1].toLowerCase().replace(/\s+/g, "-");
+            account.status = newStatus as any;
+            toast({
+              title: "Status Updated",
+              description: `Account status changed to ${newStatus}`,
+            });
+          }
+        }
+
+        setAccount({
+          ...account,
+          interactions: updatedInteractions,
+        });
+        toast({
+          title: "Interaction Updated",
+          description: `${interaction.type?.charAt(0).toUpperCase() + interaction.type?.slice(1).replace("_", " ")} has been updated`,
+        });
+    });
+  };
+
+  const deleteInteraction = (interactionId: string) => {
+    deleteInteractionFromAccount(accountId, interactionId).then(() => {
+      const updatedInteractions = account.interactions.filter(
+        (interaction) => interaction.id !== interactionId
+      );
+
+      setAccount({
+        ...account,
+        interactions: updatedInteractions,
+      });
+
+      toast({
+        title: "Interaction Deleted",
+        description: "The interaction has been deleted",
       });
     });
   };
@@ -379,7 +439,11 @@ export default function AccountDetailPage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   History of interactions with this account
                 </p>
-                <AccountTimeline interactions={account.interactions} />
+                <AccountTimeline
+                  interactions={account.interactions}
+                  setEditInteraction={setEditInteraction}
+                  deleteInteraction={deleteInteraction}
+                />
               </div>
             </div>
           </div>
@@ -442,11 +506,20 @@ export default function AccountDetailPage() {
       </div>
 
       {/* Add Interaction Dialog */}
-      <AddInteractionDialog
+      <AddEditInteractionDialog
         open={addInteractionDialogOpen}
         onOpenChange={setAddInteractionDialogOpen}
         onAddInteraction={handleAddInteraction}
         currentStatus={account.status}
+      />
+
+      <AddEditInteractionDialog
+        open={!!editInteraction}
+        key={editInteraction?.id}
+        onOpenChange={() => setEditInteraction(undefined)}
+        onEditInteraction={handleEditInteraction}
+        currentStatus={account.status}
+        initialInteraction={editInteraction}
       />
     </div>
   );

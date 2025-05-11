@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,22 +9,31 @@ import {
   StickyNoteIcon,
   ArrowRightIcon,
   PinIcon,
+  Edit,
+  Trash2
 } from "lucide-react";
 import {
   AccountInteraction,
   InteractionType,
 } from "@/polymet/data/accounts-data";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface InteractionItemProps {
   interaction: AccountInteraction;
+  setEditInteraction: (interaction: AccountInteraction) => void;
+  deleteInteraction: (id: string) => void;
   isLatest?: boolean;
 }
 
 export default function InteractionItem({
   interaction,
   isLatest = false,
+  setEditInteraction,
+  deleteInteraction,
 }: InteractionItemProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   const getInteractionIcon = (type: InteractionType) => {
     switch (type) {
       case "meeting":
@@ -98,8 +108,18 @@ export default function InteractionItem({
     }
   );
 
+  const onDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this interaction?")) {
+      deleteInteraction(interaction.id);
+    }
+  };
+
   return (
-    <div className={cn("flex gap-4 p-4 rounded-lg", isLatest && "bg-muted/50")}>
+    <div 
+      className={cn("flex gap-4 p-4 rounded-lg", isLatest && "bg-muted/50")} 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="flex flex-col items-center">
         <Avatar className="h-10 w-10">
           {interaction.createdBy.avatar ? (
@@ -140,7 +160,32 @@ export default function InteractionItem({
             {formattedDate}
           </span>
         </div>
-        <h4 className="font-medium">{interaction.title}</h4>
+        <div className="flex items-center gap-2 mb-1">
+          <h4 className="font-medium">
+            {interaction.title}
+          </h4>
+          <span className={cn("ml-auto", isHovered ? "opacity-100" : "opacity-0")}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={"h-8 w-8"}
+              onClick={() => setEditInteraction(interaction)}
+            >
+              <Edit className="h-4 w-4" />
+              <span className="sr-only">Edit</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-red-600 hover:text-red-800"
+              onClick={() => onDelete(interaction.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete</span>
+            </Button>
+          </span>
+        </div>
         {interaction.description && (
           <p className="text-sm text-muted-foreground mt-1">
           {interaction.description.split('\n').map((line, i) => (

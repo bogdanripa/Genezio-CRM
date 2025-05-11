@@ -13,6 +13,8 @@ import { SearchIcon } from "lucide-react";
 
 interface AccountTimelineProps {
   interactions: AccountInteraction[];
+  setEditInteraction: (interaction: AccountInteraction) => void;
+  deleteInteraction: (id: string) => void;
 }
 
 type FilterType =
@@ -27,6 +29,8 @@ type FilterType =
 
 export default function AccountTimeline({
   interactions,
+  setEditInteraction,
+  deleteInteraction,
 }: AccountTimelineProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,6 +93,8 @@ export default function AccountTimeline({
               key={interaction.id}
               interaction={interaction}
               isLatest={index === 0}
+              setEditInteraction={setEditInteraction}
+              deleteInteraction={deleteInteraction}
             />
           ))}
         </div>

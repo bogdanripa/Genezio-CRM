@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
-mongoose.connect(process.env["GENEZIO_CRM_DATABASE_URL"]);
+
+mongoose.connect(process.env["GENEZIO_CRM_DATABASE_URL1"] || process.env["GENEZIO_CRM_DATABASE_URL"]);
 
 const userSchema = new mongoose.Schema({
     userId: {
@@ -58,9 +59,11 @@ const userSchema = new mongoose.Schema({
     type: {
       type: String,
     },
-    createdAt: Date,
     timestamp: Date,
+    createdAt: Date,
     createdBy: userSummarySchema,
+    updatedAt: Date,
+    updatedBy: userSummarySchema,
     title: String,
     description: String,
     metadata: {

@@ -97,8 +97,13 @@ export const getAccounts = async (): Promise<Account[]> => {
 
 // Helper function to get an account by ID
 export const getAccountById = async (id: string): Promise<Account | undefined> => {
-  const response = await axios.get(`/accounts/${id}`);
-  return response.data as Account;
+  try {
+    const response = await axios.get(`/accounts/${id}`);
+    return response.data as Account;
+  } catch (error) {
+    console.error(`Error fetching account with ID ${id}:`, error);
+    return {name: 'Account not found'} as Account;
+  }
 };
 
 export const getUsers = async (): Promise<User[]> => {
@@ -157,6 +162,15 @@ export const removeContactFromAccount = async(accountId: string, contactId: stri
 export const addInteractionToAccount = async(accountId: string, interaction: AccountInteraction): Promise<void> => {
   const response = await axios.post(`/accounts/${accountId}/interactions`, interaction);
   return response.data;
+}
+
+export const updateInteractionInAccount = async(accountId: string, interaction: AccountInteraction): Promise<void> => {
+  const response = await axios.put(`/accounts/${accountId}/interactions/${interaction.id}`, interaction);
+  return response.data;
+}
+
+export const deleteInteractionFromAccount = async(accountId: string, interactionId: string): Promise<void> => {
+  await axios.delete(`/accounts/${accountId}/interactions/${interactionId}`);
 }
 
 export const unStickNote = async(accountId: string, interactionId: string): Promise<void> => {

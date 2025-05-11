@@ -250,7 +250,7 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
     timestamp: req.body.timestamp,
     createdAt: new Date(),
     createdBy: {
-      id: req.userInfo.userId,
+      userId: req.userInfo.userId,
       name: req.userInfo.name,
       email: req.userInfo.email,
     },
@@ -264,6 +264,55 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
   account.interactions.push(newInteraction);
   await account.save();
   res.status(201).send(newInteraction);
+});
+
+app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.id;
+  const interactionId = req.params.interactionId;
+  const account = await getAccount(req, accountId);
+  if (!account) {
+    return res.status(404).send({ message: "Account not found" });
+  }
+
+  const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
+  if (!interaction) {
+    return res.status(404).send({ message: "Interaction not found" });
+  }
+
+  interaction.type = req.body.type;
+  interaction.timestamp = req.body.timestamp;
+  interaction.title = req.body.title;
+  interaction.description = req.body.description;
+  interaction.actionItems = req.body.actionItems;
+  interaction.metadata = req.body.metadata;
+  interaction.isSticky = req.body.isSticky;
+  interaction.updatedAt = new Date();
+  interaction.updatedBy = {
+    userId: req.userInfo.userId,
+    name: req.userInfo.name,
+    email: req.userInfo.email,
+  };
+
+  await account.save();
+  res.send(interaction);
+});
+
+app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.id;
+  const interactionId = req.params.interactionId;
+  const account = await getAccount(req, accountId);
+  if (!account) {
+    return res.status(404).send({ message: "Account not found" });
+  }
+
+  const interactionIndex = account.interactions.findIndex((interaction) => interaction.id === interactionId);
+  if (interactionIndex === -1) {
+    return res.status(404).send({ message: "Interaction not found" });
+  }
+
+  account.interactions.splice(interactionIndex, 1);
+  await account.save();
+  res.status(204).send();
 });
 
 app.put("/accounts/:id/interactions/:interactionId/actionItems/:actionItemId", checkAuth, async function (req, res, _next) {

@@ -123,7 +123,6 @@ export default function ActionItemDialog({
                   mode="single"
                   selected={dueDate}
                   onSelect={setDueDate}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>

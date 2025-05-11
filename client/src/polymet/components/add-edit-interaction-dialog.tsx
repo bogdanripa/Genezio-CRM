@@ -50,37 +50,115 @@ interface AddInteractionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddInteraction: (interaction: Partial<AccountInteraction>) => void;
+  onEditInteraction?: (id: string, updates: Partial<AccountInteraction>) => void;
   currentStatus?: AccountStatus;
+  initialInteraction?: AccountInteraction;
 }
 
-export default function AddInteractionDialog({
+export default function AddEditInteractionDialog({
   open,
   onOpenChange,
   onAddInteraction,
+  onEditInteraction,
   currentStatus = "lead",
+  initialInteraction,
 }: AddInteractionDialogProps) {
-  const [activeTab, setActiveTab] = useState<string>("meeting");
-  const [activeSubTab, setActiveSubTab] = useState<string>("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [newStatus, setNewStatus] = useState<AccountStatus>(currentStatus);
-  const [isSticky, setIsSticky] = useState(false);
-  const [date, setDate] = useState<Date>(new Date());
-  const [duration, setDuration] = useState("30");
-  const [attendees, setAttendees] = useState("1");
-  const [actionItems, setActionItems] = useState<Partial<ActionItem>[]>([]);
+  const [activeTab, setActiveTab] = useState<string>(
+    initialInteraction?.type === "meeting" ||
+    initialInteraction?.type === "call" ||
+    initialInteraction?.type === "email"
+      ? initialInteraction.type
+      : initialInteraction?.type
+        ? "more"
+        : "meeting"
+  );
+  const [activeSubTab, setActiveSubTab] = useState<string>(
+    initialInteraction &&
+    initialInteraction.type !== "meeting" &&
+    initialInteraction.type !== "call" &&
+    initialInteraction.type !== "email"
+      ? initialInteraction.type
+      : ""
+  );
+  const [title, setTitle] = useState(initialInteraction?.title || "");
+  const [description, setDescription] = useState(initialInteraction?.description || "");
+  const [newStatus, setNewStatus] = useState<AccountStatus>(
+    initialInteraction?.type === "status_change" && initialInteraction?.metadata?.to
+      ? initialInteraction.metadata.to
+      : currentStatus
+  );
+  const [isSticky, setIsSticky] = useState(
+    initialInteraction?.type === "sticky_note" && initialInteraction?.isSticky ? true : false
+  );
+  const [date, setDate] = useState<Date>(
+    initialInteraction?.timestamp ? new Date(initialInteraction.timestamp) : new Date()
+  );
+  const [duration, setDuration] = useState(
+    initialInteraction?.metadata?.duration
+      ? String(initialInteraction.metadata.duration)
+      : "30"
+  );
+  const [attendees, setAttendees] = useState(
+    initialInteraction?.metadata?.attendees
+      ? String(initialInteraction.metadata.attendees)
+      : "1"
+  );
+  const [actionItems, setActionItems] = useState<Partial<ActionItem>[]>(
+    initialInteraction?.actionItems
+      ? initialInteraction.actionItems.map((item) => ({
+          ...item,
+        }))
+      : []
+  );
 
   const resetForm = () => {
-    setActiveTab("meeting");
-    setActiveSubTab("");
-    setTitle("");
-    setDescription("");
-    setNewStatus(currentStatus);
-    setIsSticky(false);
-    setDate(new Date());
-    setDuration("30");
-    setAttendees("1");
-    setActionItems([]);
+    setActiveTab(
+      initialInteraction?.type === "meeting" ||
+      initialInteraction?.type === "call" ||
+      initialInteraction?.type === "email"
+        ? initialInteraction.type
+        : initialInteraction?.type
+          ? "more"
+          : "meeting"
+    );
+    setActiveSubTab(
+      initialInteraction &&
+      initialInteraction.type !== "meeting" &&
+      initialInteraction.type !== "call" &&
+      initialInteraction.type !== "email"
+        ? initialInteraction.type
+        : ""
+    );
+    setTitle(initialInteraction?.title || "");
+    setDescription(initialInteraction?.description || "");
+    setNewStatus(
+      initialInteraction?.type === "status_change" && initialInteraction?.metadata?.to
+        ? initialInteraction.metadata.to
+        : currentStatus
+    );
+    setIsSticky(
+      initialInteraction?.type === "sticky_note" && initialInteraction?.isSticky ? true : false
+    );
+    setDate(
+      initialInteraction?.timestamp ? new Date(initialInteraction.timestamp) : new Date()
+    );
+    setDuration(
+      initialInteraction?.metadata?.duration
+        ? String(initialInteraction.metadata.duration)
+        : "30"
+    );
+    setAttendees(
+      initialInteraction?.metadata?.attendees
+        ? String(initialInteraction.metadata.attendees)
+        : "1"
+    );
+    setActionItems(
+      initialInteraction?.actionItems
+        ? initialInteraction.actionItems.map((item) => ({
+            ...item,
+          }))
+        : []
+    );
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -99,8 +177,9 @@ export default function AddInteractionDialog({
       description: description.trim() || undefined,
       timestamp: date.toISOString(),
     };
-    if (activeTab == 'more')
+    if (activeTab === "more") {
       baseInteraction.type = activeSubTab as any;
+    }
 
     // Add type-specific data
     if (baseInteraction.type === "meeting") {
@@ -110,6 +189,10 @@ export default function AddInteractionDialog({
       };
     } else if (baseInteraction.type === "status_change") {
       baseInteraction.title = `Status changed from ${currentStatus} to ${newStatus}`;
+      baseInteraction.metadata = {
+        from: currentStatus,
+        to: newStatus,
+      };
     } else if (baseInteraction.type === "sticky_note") {
       baseInteraction.isSticky = isSticky;
     }
@@ -118,13 +201,21 @@ export default function AddInteractionDialog({
     if (actionItems.length > 0) {
       baseInteraction.actionItems = actionItems.map((item) => ({
         ...item,
-        id: `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        completed: false,
-        createdAt: new Date().toISOString(),
+        id: item.id || `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        completed: item.completed ?? false,
+        createdAt: item.createdAt || new Date().toISOString(),
       }));
     }
 
-    onAddInteraction(baseInteraction);
+    if (initialInteraction?.id) {
+      baseInteraction.id = initialInteraction.id;
+    }
+
+    if (initialInteraction && onEditInteraction) {
+      onEditInteraction(baseInteraction);
+    } else {
+      onAddInteraction(baseInteraction);
+    }
     handleOpenChange(false);
   };
 
@@ -155,9 +246,13 @@ export default function AddInteractionDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Add Interaction</DialogTitle>
+          <DialogTitle>
+            {initialInteraction ? "Edit Interaction" : "Add Interaction"}
+          </DialogTitle>
           <DialogDescription>
-            Record a new interaction with this account
+            {initialInteraction
+              ? "Update this interaction's details"
+              : "Record a new interaction with this account"}
           </DialogDescription>
         </DialogHeader>
 
@@ -223,7 +318,6 @@ export default function AddInteractionDialog({
                         mode="single"
                         selected={date}
                         onSelect={(date) => date && setDate(date)}
-                        initialFocus
                       />
                     </PopoverContent>
                   </Popover>
@@ -306,7 +400,6 @@ export default function AddInteractionDialog({
                       mode="single"
                       selected={date}
                       onSelect={(date) => date && setDate(date)}
-                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>
@@ -372,7 +465,6 @@ export default function AddInteractionDialog({
                       mode="single"
                       selected={date}
                       onSelect={(date) => date && setDate(date)}
-                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>
@@ -430,7 +522,6 @@ export default function AddInteractionDialog({
                           mode="single"
                           selected={date}
                           onSelect={(date) => date && setDate(date)}
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -493,7 +584,6 @@ export default function AddInteractionDialog({
                           mode="single"
                           selected={date}
                           onSelect={(date) => date && setDate(date)}
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -552,7 +642,6 @@ export default function AddInteractionDialog({
                           mode="single"
                           selected={date}
                           onSelect={(date) => date && setDate(date)}
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -674,7 +763,7 @@ export default function AddInteractionDialog({
             Cancel
           </Button>
           <Button onClick={handleAddInteraction} disabled={!title.trim()}>
-            Add Interaction
+            {initialInteraction ? "Update Interaction" : "Add Interaction"}
           </Button>
         </DialogFooter>
       </DialogContent>
