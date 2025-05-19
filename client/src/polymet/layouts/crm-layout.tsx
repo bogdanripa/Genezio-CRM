@@ -176,7 +176,7 @@ export default function CrmLayout({ children }) {
                     {currentUser?.avatar ? (
                       <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                     ) : (
-                      <AvatarFallback>
+                      <AvatarFallback title={currentUser?.name}>
                         {currentUser?.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     )}

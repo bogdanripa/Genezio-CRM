@@ -129,7 +129,7 @@ export default function InteractionItem({
               alt={interaction.createdBy.name}
             />
           ) : (
-            <AvatarFallback>
+            <AvatarFallback title={interaction.createdBy.name}>
               {interaction.createdBy.name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           )}

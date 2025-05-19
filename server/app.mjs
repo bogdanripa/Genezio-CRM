@@ -61,8 +61,6 @@ app.get("/users", checkAuth, async function (req, res, _next) {
   }
   if (!users) users = [];
 
-  console.log(users);
-
   res.send(users);
 });
 

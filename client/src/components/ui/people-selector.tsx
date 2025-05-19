@@ -140,7 +140,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
                   {person.avatarUrl ? (
                     <AvatarImage src={person.avatarUrl} alt={person.name} />
                   ) : (
-                    <AvatarFallback>
+                    <AvatarFallback title={person.name}>
                       {person.name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   )}
@@ -169,7 +169,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
                     {person.avatarUrl ? (
                       <AvatarImage src={person.avatarUrl} alt={person.name} />
                     ) : (
-                      <AvatarFallback>
+                      <AvatarFallback title={person.name}>
                         {person.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     )}
@@ -194,7 +194,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
                     {person.avatarUrl ? (
                       <AvatarImage src={person.avatarUrl} alt={person.name} />
                     ) : (
-                      <AvatarFallback>
+                      <AvatarFallback title={person.name}>
                         {person.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     )}

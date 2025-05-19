@@ -97,7 +97,7 @@ export default function ActionItemComponent({
                       alt={item.assignedTo.name}
                     />
                   ) : (
-                    <AvatarFallback>
+                    <AvatarFallback title={item.assignedTo.name}>
                       {item.assignedTo.name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   )}
