@@ -421,6 +421,15 @@ export default function AddEditInteractionDialog({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="meeting-attendees">Attendees</Label>
+                <PeopleSelector
+                  teamMembers={accountTeamMembers}
+                  contacts={accountContacts}
+                  selectedPeople={attendees}
+                  onChange={(people) => setAttendees(people)}
+                />
+              </div>
             </div>
           </TabsContent>
 
@@ -468,6 +477,15 @@ export default function AddEditInteractionDialog({
                     />
                   </PopoverContent>
                 </Popover>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="meeting-attendees">Attendees</Label>
+                <PeopleSelector
+                  teamMembers={accountTeamMembers}
+                  contacts={accountContacts}
+                  selectedPeople={attendees}
+                  onChange={(people) => setAttendees(people)}
+                />
               </div>
             </div>
           </TabsContent>
@@ -525,6 +543,15 @@ export default function AddEditInteractionDialog({
                         />
                       </PopoverContent>
                     </Popover>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="meeting-attendees">Attendees</Label>
+                    <PeopleSelector
+                      teamMembers={accountTeamMembers}
+                      contacts={accountContacts}
+                      selectedPeople={attendees}
+                      onChange={(people) => setAttendees(people)}
+                    />
                   </div>
                 </div>
               </TabsContent>
