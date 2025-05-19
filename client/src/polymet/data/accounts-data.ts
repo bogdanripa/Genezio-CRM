@@ -27,10 +27,14 @@ export type AccountInteraction = {
     id: string;
     name: string;
     email: string;
-    avatar?: string;
   };
   title: string;
   description?: string;
+  attendees?: {
+    id: string;
+    name: string;
+    email: string;
+  }[]
   metadata?: Record<string, any>;
   isSticky?: boolean;
 };
@@ -47,16 +51,14 @@ export type Account = {
   updatedAt?: string;
   status: string;
   owner?: {
-    userId: string;
+    id: string;
     name: string;
     email: string;
-    avatar?: string;
   };
   teamMembers?: {
-    userId: string;
+    id: string;
     name: string;
     email: string;
-    avatar?: string;
   }[];
   employees?: AccountEmployee[];
   interactions?: AccountInteraction[];
@@ -131,17 +133,17 @@ export const deleteAccount = async (id: string): Promise<void> => {
   await axios.delete(`/accounts/${id}`);
 }
 
-export const addTeamMemberToAccount = async(accountId: string, userId: string): Promise<void> => {
-  const response = await axios.post(`/accounts/${accountId}/teamMembers`, { userId });
+export const addTeamMemberToAccount = async(accountId: string, id: string): Promise<void> => {
+  const response = await axios.post(`/accounts/${accountId}/teamMembers`, { id });
   return response.data;
 }
 
-export const removeTeamMemberFromAccount = async(accountId: string, userId: string): Promise<void> => {
-  await axios.delete(`/accounts/${accountId}/teamMembers/${userId}`);
+export const removeTeamMemberFromAccount = async(accountId: string, id: string): Promise<void> => {
+  await axios.delete(`/accounts/${accountId}/teamMembers/${id}`);
 }
 
-export const transferAccountOwnership = async(accountId: string, userId: string): Promise<void> => {
-  const response = await axios.put(`/accounts/${accountId}/transferOwnership`, { userId });
+export const transferAccountOwnership = async(accountId: string, id: string): Promise<void> => {
+  const response = await axios.put(`/accounts/${accountId}/transferOwnership`, { id });
   return response.data;
 }
 

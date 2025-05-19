@@ -22,7 +22,7 @@ import { Account } from "@/polymet/data/accounts-data";
 interface TransferOwnershipDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onTransferOwnership: (userId: string) => void;
+  onTransferOwnership: (id: string) => void;
   account: Account;
 }
 
@@ -36,7 +36,7 @@ export default function TransferOwnershipDialog({
 
   // Filter out the current owner and get team members who could become owner
   const eligibleTeamMembers = account.teamMembers?.filter(
-    (member) => member.userId !== account.owner?.userId
+    (member) => member.id !== account.owner?.id
   );
 
   const handleConfirm = () => {
@@ -75,7 +75,7 @@ export default function TransferOwnershipDialog({
               <SelectContent>
                 {eligibleTeamMembers.length > 0 ? (
                   eligibleTeamMembers.map((member) => (
-                    <SelectItem key={member.userId} value={member.userId}>
+                    <SelectItem key={member.id} value={member.id}>
                       {member.name} ({member.email})
                     </SelectItem>
                   ))

@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PeopleSelector from "@/components/ui/people-selector";
+
 import {
   Select,
   SelectContent,
@@ -53,6 +55,8 @@ interface AddInteractionDialogProps {
   onEditInteraction?: (id: string, updates: Partial<AccountInteraction>) => void;
   currentStatus?: AccountStatus;
   initialInteraction?: AccountInteraction;
+  accountTeamMembers?: any[];
+  accountContacts?: any[];
 }
 
 export default function AddEditInteractionDialog({
@@ -62,6 +66,8 @@ export default function AddEditInteractionDialog({
   onEditInteraction,
   currentStatus = "lead",
   initialInteraction,
+  accountTeamMembers = [],
+  accountContacts = [],
 }: AddInteractionDialogProps) {
   const [activeTab, setActiveTab] = useState<string>(
     initialInteraction?.type === "meeting" ||
@@ -99,9 +105,9 @@ export default function AddEditInteractionDialog({
       : "30"
   );
   const [attendees, setAttendees] = useState(
-    initialInteraction?.metadata?.attendees
-      ? String(initialInteraction.metadata.attendees)
-      : "1"
+    initialInteraction?.attendees
+      ? initialInteraction.attendees
+      : []
   );
   const [actionItems, setActionItems] = useState<Partial<ActionItem>[]>(
     initialInteraction?.actionItems
@@ -148,9 +154,9 @@ export default function AddEditInteractionDialog({
         : "30"
     );
     setAttendees(
-      initialInteraction?.metadata?.attendees
-        ? String(initialInteraction.metadata.attendees)
-        : "1"
+      initialInteraction?.attendees
+        ? initialInteraction.attendees
+        : []
     );
     setActionItems(
       initialInteraction?.actionItems
@@ -185,8 +191,8 @@ export default function AddEditInteractionDialog({
     if (baseInteraction.type === "meeting") {
       baseInteraction.metadata = {
         duration: parseInt(duration),
-        attendees: parseInt(attendees),
       };
+      baseInteraction.attendees = attendees;
     } else if (baseInteraction.type === "status_change") {
       baseInteraction.title = `Status changed from ${currentStatus} to ${newStatus}`;
       baseInteraction.metadata = {
@@ -342,19 +348,13 @@ export default function AddEditInteractionDialog({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="meeting-attendees">Number of Attendees</Label>
-                <Select value={attendees} onValueChange={setAttendees}>
-                  <SelectTrigger id="meeting-attendees">
-                    <SelectValue placeholder="Select number of attendees" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 attendee</SelectItem>
-                    <SelectItem value="2">2 attendees</SelectItem>
-                    <SelectItem value="3">3 attendees</SelectItem>
-                    <SelectItem value="4">4 attendees</SelectItem>
-                    <SelectItem value="5">5+ attendees</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="meeting-attendees">Attendees</Label>
+                <PeopleSelector
+                  teamMembers={accountTeamMembers}
+                  contacts={accountContacts}
+                  selectedPeople={attendees}
+                  onChange={(people) => setAttendees(people)}
+                />
               </div>
             </div>
           </TabsContent>

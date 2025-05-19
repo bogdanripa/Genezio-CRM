@@ -22,7 +22,7 @@ import { get } from "http";
 interface TeamMemberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddMember: (userId: string) => void;
+  onAddMember: (id: string) => void;
   currentTeamMemberIds: string[];
   title?: string;
   description?: string;
@@ -45,7 +45,7 @@ export default function TeamMemberDialog({
     const getAvailableUsers = async () => {
       const allUsers = await getUsers();
       const au = allUsers.filter(
-        (user) => !currentTeamMemberIds.includes(user.userId)
+        (user) => !currentTeamMemberIds.includes(user.id)
       );
       setAvailableUsers(au);
     }
@@ -79,7 +79,7 @@ export default function TeamMemberDialog({
               <SelectContent>
                 {availableUsers.length > 0 ? (
                   availableUsers.map((user) => (
-                    <SelectItem key={user.userId} value={user.userId}>
+                    <SelectItem key={user.id} value={user.id}>
                       {user.name} ({user.email})
                     </SelectItem>
                   ))

@@ -22,9 +22,9 @@ import TransferOwnershipDialog from "@/polymet/components/transfer-ownership-dia
 
 interface TeamMembersCardProps {
   account: Account;
-  onAddMember?: (userId: string) => void;
-  onRemoveMember?: (userId: string) => void;
-  onTransferOwnership?: (userId: string) => void;
+  onAddMember?: (id: string) => void;
+  onRemoveMember?: (id: string) => void;
+  onTransferOwnership?: (id: string) => void;
 }
 
 export default function TeamMembersCard({
@@ -38,7 +38,7 @@ export default function TeamMembersCard({
     useState(false);
 
   // Get current team member IDs for filtering in the add member dialog
-  const currentTeamMemberIds = account.teamMembers.map((member) => member.userId);
+  const currentTeamMemberIds = account.teamMembers.map((member) => member.id);
 
   return (
     <Card>
@@ -96,10 +96,10 @@ export default function TeamMembersCard({
         </div>
 
         {/* Team Members */}
-        {account.teamMembers?.filter((member) => member.userId !== account.owner?.userId)
+        {account.teamMembers?.filter((member) => member.id !== account.owner?.id)
           .map((member) => (
             <div
-              key={member.userId}
+              key={member.id}
               className="flex items-center gap-4 p-4 rounded-lg border"
             >
               <Avatar>
@@ -129,7 +129,7 @@ export default function TeamMembersCard({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     className="text-destructive"
-                    onClick={() => onRemoveMember(member.userId)}
+                    onClick={() => onRemoveMember(member.id)}
                   >
                     Remove Member
                   </DropdownMenuItem>

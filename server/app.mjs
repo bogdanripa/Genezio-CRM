@@ -35,16 +35,9 @@ async function checkAuth(req, res, next) {
   }
 }
 
-async function getAllusers(req) {
-  const address = req.userInfo.address;
-  const users = await Users.find({address});
-  if (!users) return [];
-  return users;
-}
-
 async function getAllAccounts(req) {
   const address = req.userInfo.address;
-  return Accounts.find({ "domain": address});
+  return Accounts.find({ "domain": address}).lean();
 }
 
 async function getAccount(req, accountId) {
@@ -58,7 +51,18 @@ async function getAccount(req, accountId) {
 }
 
 app.get("/users", checkAuth, async function (req, res, _next) {
-  const users = await getAllusers(req);
+  const address = req.userInfo.address;
+  const users = await Users.find({address}).lean();
+  if (users) {
+    users.forEach((user) => {
+      user.id = user.userId;
+      delete user.userId;
+    });
+  }
+  if (!users) users = [];
+
+  console.log(users);
+
   res.send(users);
 });
 
@@ -103,7 +107,7 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
     status: req.body.status,
     domain: req.userInfo.address,
     owner: {
-      userId: req.userInfo.userId,
+      id: req.userInfo.userId,
       name: req.userInfo.name,
       email: req.userInfo.email,
     },
@@ -148,8 +152,11 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
   }
 
   const newMember = await Users.findOne({
-    userId: req.body.userId
-  });
+    userId: req.body.id
+  }).lean();
+  newMember.id = newMember.userId;
+  delete newMember.userId;
+
   account.teamMembers.push(newMember);
   await account.save();
   res.status(201).send(newMember);
@@ -163,7 +170,7 @@ app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req
     return res.status(404).send({ message: "Account not found" });
   }
 
-  const memberIndex = account.teamMembers.findIndex((member) => member.userId === memberId);
+  const memberIndex = account.teamMembers.findIndex((member) => member.id === memberId);
   if (memberIndex === -1) {
     return res.status(404).send({ message: "Member not found" });
   }
@@ -180,13 +187,16 @@ app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, 
     return res.status(404).send({ message: "Account not found" });
   }
   const newOwner = await Users.findOne({
-    userId: req.body.userId
-  });
+    userId: req.body.id
+  }).lean();
 
   if (!newOwner) {
     return res.status(404).send({ message: "User not found" });
   }
-  
+
+  newOwner.id = newOwner.userId;
+  delete newOwner.userId;
+
   account.owner = newOwner;
   await account.save();
   res.status(204).send();
@@ -267,13 +277,14 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
     timestamp: req.body.timestamp,
     createdAt: new Date(),
     createdBy: {
-      userId: req.userInfo.userId,
+      id: req.userInfo.userId,
       name: req.userInfo.name,
       email: req.userInfo.email,
     },
     title: req.body.title,
     description: req.body.description,
     actionItems: req.body.actionItems,
+    attendees: req.body.attendees,
     metadata: req.body.metadata,
     isSticky: req.body.isSticky,
   };
@@ -303,9 +314,10 @@ app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (
   interaction.actionItems = req.body.actionItems;
   interaction.metadata = req.body.metadata;
   interaction.isSticky = req.body.isSticky;
+  interaction.attendees = req.body.attendees;
   interaction.updatedAt = new Date();
   interaction.updatedBy = {
-    userId: req.userInfo.userId,
+    id: req.userInfo.userId,
     name: req.userInfo.name,
     email: req.userInfo.email,
   };
@@ -402,6 +414,6 @@ app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
 
 app.listen(8080, () => {
   console.log(
-    "Server is running on port 8080. Check the app on http://localhost:8080"
+    "Server is running"
   );
 });

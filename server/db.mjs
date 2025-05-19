@@ -42,6 +42,13 @@ const userSchema = new mongoose.Schema({
   }, {
     _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
+
+  const attendeeSchema = new mongoose.Schema({
+    id:   { type: String, required: true },
+    name: { type: String, required: true },
+    email: { type: String, required: false },
+  }, { _id: false });
+
   
   const actionItemSchema = new mongoose.Schema({
     id: String,
@@ -69,8 +76,8 @@ const userSchema = new mongoose.Schema({
     metadata: {
       meetingId: String,
       duration: Number,
-      attendees: [String],
     },
+    attendees: [attendeeSchema],
     actionItems: [actionItemSchema],
     isSticky: Boolean,
   }, {

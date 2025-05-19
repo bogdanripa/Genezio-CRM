@@ -169,11 +169,11 @@ export default function AccountDetailPage() {
     });
   };
 
-  const handleAddMember = (userId: string) => {
+  const handleAddMember = (id: string) => {
     // In a real app, this would make an API call
     // For now, we'll just use the first user as a placeholder
 
-    addTeamMemberToAccount(accountId, userId).then((newMember) => {
+    addTeamMemberToAccount(accountId, id).then((newMember) => {
       setAccount({
         ...account,
         teamMembers: [...account.teamMembers, newMember],
@@ -186,12 +186,12 @@ export default function AccountDetailPage() {
     });
   };
 
-  const handleRemoveMember = (userId: string) => {
+  const handleRemoveMember = (id: string) => {
 
-    removeTeamMemberFromAccount(accountId, userId).then(() => {
+    removeTeamMemberFromAccount(accountId, id).then(() => {
       setAccount({
         ...account,
-        teamMembers: account.teamMembers.filter((member) => member.userId !== userId),
+        teamMembers: account.teamMembers.filter((member) => member.id !== id),
       });
 
       toast({
@@ -201,11 +201,11 @@ export default function AccountDetailPage() {
     });
   };
 
-  const handleTransferOwnership = (userId: string) => {
-    const newOwner = account.teamMembers.find((member) => member.userId === userId);
+  const handleTransferOwnership = (id: string) => {
+    const newOwner = account.teamMembers.find((member) => member.id === id);
     if (!newOwner) return;
 
-    transferAccountOwnership(accountId, userId).then(() => {
+    transferAccountOwnership(accountId, id).then(() => {
       setAccount({
         ...account,
         owner: newOwner,
@@ -511,6 +511,8 @@ export default function AccountDetailPage() {
         onOpenChange={setAddInteractionDialogOpen}
         onAddInteraction={handleAddInteraction}
         currentStatus={account.status}
+        accountTeamMembers={[account.owner, ...account.teamMembers]}
+        accountContacts={account.employees}
       />
 
       <AddEditInteractionDialog
@@ -520,6 +522,8 @@ export default function AccountDetailPage() {
         onEditInteraction={handleEditInteraction}
         currentStatus={account.status}
         initialInteraction={editInteraction}
+        accountTeamMembers={[account.owner, ...account.teamMembers]}
+        accountContacts={account.employees}
       />
     </div>
   );

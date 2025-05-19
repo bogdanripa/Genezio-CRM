@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import PeopleSelector from "@/components/ui/people-selector";
 import {
   CalendarIcon,
   MessageCircleIcon,
@@ -214,17 +215,15 @@ export default function InteractionItem({
           <div className="mt-2 text-sm">
             <span className="text-muted-foreground">Duration: </span>
             <span>{interaction.metadata.duration} minutes</span>
-            {interaction.metadata.attendees &&
-              interaction.metadata.attendees.length > 0 && (
-                <div className="mt-1">
-                  <span className="text-muted-foreground">Attendees: </span>
-                  <span>
-                    {interaction.metadata.attendees.length} employee(s)
-                  </span>
-                </div>
-              )}
           </div>
         )}
+        {interaction.attendees && interaction.attendees.length > 0 && (
+          <div className="mt-2">
+            <PeopleSelector
+              selectedPeople={interaction.attendees}
+            />
+          </div>
+      )}
       </div>
     </div>
   );
