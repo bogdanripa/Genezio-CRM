@@ -395,15 +395,19 @@ app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
   const interactionsAcrossAccounts = [];
   accounts.forEach((account) => {
     account.interactions.forEach((interaction) => {
+      if (!interaction.createdAt) {
+        return;
+      }
       interactionsAcrossAccounts.push({
         createdAt: interaction.createdAt,
         text: `${interaction.createdBy.name} added a ${interaction.type} to ${account.name}`,
+        accountId: account.id,
       });
     });
   });
 
   interactionsAcrossAccounts.sort((a, b) => {
-    return new Date(b.createdAt) - new Date(a.createdAt);
+    return b.createdAt - a.createdAt;
   });
 
   const latestInteractions = interactionsAcrossAccounts.slice(0, 5);

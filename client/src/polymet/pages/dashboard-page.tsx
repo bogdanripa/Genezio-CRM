@@ -80,21 +80,26 @@ export default function DashboardPage() {
             <CardContent>
               <div className="space-y-4">
                 {latestInteractions.map((interaction) => (
-                  <div
-                    className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0"
-                  >
+                    <div
+                    className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0 cursor-pointer"
+                    onClick={() => {
+                      if (interaction.accountId) {
+                        window.location.href = `/accounts/${interaction.accountId}`;
+                      }
+                    }}
+                    >
                     <div className="bg-primary/10 rounded-full p-2">
                       <PlusIcon className="h-4 w-4 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium">
-                        {interaction.text}
+                      {interaction.text}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        on {new Date(interaction.createdAt).toLocaleDateString()}
+                      on {new Date(interaction.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                  </div>
+                    </div>
                 ))}
               </div>
               <Button variant="link" className="w-full mt-2" asChild>

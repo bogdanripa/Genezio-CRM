@@ -43,7 +43,7 @@ export default function StickyNote({
     >
       <CardHeader className="p-3 pb-0 flex flex-row justify-between items-start">
         <div className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
+          <Avatar className="h-10 w-10">
             {note.createdBy.avatar ? (
               <AvatarImage
                 src={note.createdBy.avatar}
