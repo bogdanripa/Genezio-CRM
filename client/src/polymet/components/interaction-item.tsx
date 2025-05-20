@@ -129,9 +129,7 @@ export default function InteractionItem({
               alt={interaction.createdBy.name}
             />
           ) : (
-            <AvatarFallback title={interaction.createdBy.name}>
-              {interaction.createdBy.name.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
+            <AvatarFallback title={interaction.createdBy.name} />
           )}
         </Avatar>
         <div className="w-0.5 grow bg-border mt-2"></div>

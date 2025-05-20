@@ -50,9 +50,7 @@ export default function StickyNote({
                 alt={note.createdBy.name}
               />
             ) : (
-              <AvatarFallback title={note.createdBy.name}>
-                {note.createdBy.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback title={note.createdBy.name} />
             )}
           </Avatar>
           <span className="text-sm font-medium">{note.createdBy.name}</span>

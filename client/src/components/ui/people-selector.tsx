@@ -140,9 +140,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
                   {person.avatarUrl ? (
                     <AvatarImage src={person.avatarUrl} alt={person.name} />
                   ) : (
-                    <AvatarFallback title={person.name}>
-                      {person.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
+                    <AvatarFallback title={person.name} />
                   )}
                 </Avatar>
               </Overlap>
@@ -169,9 +167,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
                     {person.avatarUrl ? (
                       <AvatarImage src={person.avatarUrl} alt={person.name} />
                     ) : (
-                      <AvatarFallback title={person.name}>
-                        {person.name.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
+                      <AvatarFallback title={person.name} />
                     )}
                   </Avatar>
                   <ItemLabel>{person.name}</ItemLabel>
@@ -194,9 +190,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
                     {person.avatarUrl ? (
                       <AvatarImage src={person.avatarUrl} alt={person.name} />
                     ) : (
-                      <AvatarFallback title={person.name}>
-                        {person.name.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
+                      <AvatarFallback title={person.name} />
                     )}
                   </Avatar>
                   <ItemLabel>{person.name}</ItemLabel>

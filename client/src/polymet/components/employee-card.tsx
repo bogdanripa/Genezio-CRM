@@ -48,9 +48,7 @@ export default function EmployeeCard({
             {employee.avatar ? (
               <AvatarImage src={employee.avatar} alt={employee.name} />
             ) : (
-              <AvatarFallback title={employee.name}>
-                {employee.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback title={employee.name} />
             )}
           </Avatar>
           <div>

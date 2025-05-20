@@ -30,9 +30,7 @@ export default function AccountCard({ account }: AccountCardProps) {
       <Card className="overflow-hidden hover:shadow-md transition-shadow h-full cursor-pointer">
         <CardHeader className="p-4 pb-2 flex flex-row gap-4 items-center">
           <Avatar className="h-12 w-12">
-            <AvatarFallback title={account.name}>
-              {account.name.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
+            <AvatarFallback title={account.name} />
           </Avatar>
           <div className="flex-1 space-y-1 overflow-hidden">
             <div className="flex items-center justify-between">

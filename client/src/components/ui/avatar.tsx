@@ -5,6 +5,16 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
 import { cn } from "@/lib/utils"
 
+const getInitials = (name: string | undefined) => {
+  if (!name) return "N/A";
+  name = name.trim().toUpperCase();
+  if (name.includes(" ")) {
+    const names = name.split(" ")
+    return names[0][0] + names[names.length - 1][0]
+  }
+  return name.substring(0, 2);
+}
+
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
@@ -44,7 +54,9 @@ const AvatarFallback = React.forwardRef<
     )}
     title={title}
     {...props}
-  />
+  >
+    {getInitials(title)}
+  </AvatarPrimitive.Fallback>
 ))
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 

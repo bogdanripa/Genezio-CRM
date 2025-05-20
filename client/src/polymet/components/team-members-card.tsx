@@ -64,9 +64,7 @@ export default function TeamMembersCard({
                 alt={account.owner.name}
               />
             ) : (
-              <AvatarFallback title={account.owner.name}>
-                {account.owner.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback title={account.owner.name} />
             )}
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -106,9 +104,7 @@ export default function TeamMembersCard({
                 {member.avatar ? (
                   <AvatarImage src={member.avatar} alt={member.name} />
                 ) : (
-                  <AvatarFallback title={member.name}>
-                    {member.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                  <AvatarFallback title={member.name} />
                 )}
               </Avatar>
               <div className="flex-1 min-w-0">
