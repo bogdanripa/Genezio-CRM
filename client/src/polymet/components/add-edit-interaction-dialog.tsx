@@ -192,7 +192,6 @@ export default function AddEditInteractionDialog({
       baseInteraction.metadata = {
         duration: parseInt(duration),
       };
-      baseInteraction.attendees = attendees;
     } else if (baseInteraction.type === "status_change") {
       baseInteraction.title = `Status changed from ${currentStatus} to ${newStatus}`;
       baseInteraction.metadata = {
@@ -202,6 +201,8 @@ export default function AddEditInteractionDialog({
     } else if (baseInteraction.type === "sticky_note") {
       baseInteraction.isSticky = isSticky;
     }
+
+    baseInteraction.attendees = attendees;
 
     // Add action items if any
     if (actionItems.length > 0) {
