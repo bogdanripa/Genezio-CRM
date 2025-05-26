@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   const Users = mongoose.model('User', userSchema);
   
   const userSummarySchema = new mongoose.Schema({
-    userId: String,
+    id: String,
     name: String,
     email: String,
   }, {

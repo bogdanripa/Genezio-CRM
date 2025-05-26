@@ -152,23 +152,47 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
   const newMember = await Users.findOne({
     userId: req.body.id
   }).lean();
+  if (!newMember) {
+    return res.status(404).send({ message: "User not found" });
+  }
   newMember.id = newMember.userId;
   delete newMember.userId;
 
+  // Flatten team members
+  account.teamMembers = account.teamMembers.map((m) =>
+    typeof m.toObject === "function" ? m.toObject() : m
+  );
+
   account.teamMembers.push(newMember);
+
+  // remove account.owner from teamMembers if it exists
+  const ownerIndex = account.teamMembers.findIndex((member) => member.id === account.owner.id);
+  if (ownerIndex !== -1) {
+    account.teamMembers.splice(ownerIndex, 1);
+  }
   await account.save();
+
   res.status(201).send(newMember);
 });
 
 app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const memberId = req.params.memberId;
+  let memberId = req.params.memberId;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
 
-  const memberIndex = account.teamMembers.findIndex((member) => member.id === memberId);
+  if (memberId == 'undefined') {
+    memberId = undefined;
+  }
+
+  // Flatten team members
+  account.teamMembers = account.teamMembers.map((m) =>
+    typeof m.toObject === "function" ? m.toObject() : m
+  );
+
+  const memberIndex = account.teamMembers.findIndex((member) => { return member.id == memberId});
   if (memberIndex === -1) {
     return res.status(404).send({ message: "Member not found" });
   }
@@ -252,6 +276,11 @@ app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, 
     return res.status(404).send({ message: "Account not found" });
   }
 
+  // Flatten employees
+  account.employees = account.employees.map((m) =>
+    typeof m.toObject === "function" ? m.toObject() : m
+  );
+
   const contactIndex = account.employees.findIndex((contact) => contact.id === contactId);
   if (contactIndex === -1) {
     return res.status(404).send({ message: "Contact not found" });
@@ -331,6 +360,11 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
+
+  // Flatten interactions
+  account.interactions = account.interactions.map((m) =>
+    typeof m.toObject === "function" ? m.toObject() : m
+  );
 
   const interactionIndex = account.interactions.findIndex((interaction) => interaction.id === interactionId);
   if (interactionIndex === -1) {
