@@ -79,7 +79,6 @@ const options = {
 };
 
 const swaggerSpec = swaggerJSDoc(options);
-
 const app = express();
 
 app.use(cors());
@@ -1216,6 +1215,12 @@ app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
 
   const latestInteractions = interactionsAcrossAccounts.slice(0, 5);
   res.send(latestInteractions);
+});
+
+
+app.get('/docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
 });
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
