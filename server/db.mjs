@@ -26,17 +26,35 @@ const userSchema = new mongoose.Schema({
   const Users = mongoose.model('User', userSchema);
   
   const userSummarySchema = new mongoose.Schema({
-    id: String,
-    name: String,
-    email: String,
+    id: {
+      type: String,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    }
   }, {
     _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
   
   const employeeSchema = new mongoose.Schema({
-    id: String,
-    name: String,
-    role: String,
+    id: {
+      type: String,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      required: true,
+    },
     email: String,
     phone: String,
     meetings: [String],
