@@ -46,6 +46,7 @@ export type Account = {
   logo?: string;
   description?: string;
   industry?: string;
+  accountType?: "Client" | "Partner";
   website?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -74,6 +75,7 @@ export type SimpleAccount = {
   status: string;
   description: string;
   industry: string;
+  accountType: "Client" | "Partner";
   numberOfContacts: number;
   numberOfInteractions: number;
   numberOfTeamMembers: number;
@@ -102,7 +104,7 @@ export const getAccounts = async (): Promise<SimpleAccount[]> => {
 };
 
 // Helper function to get an account by ID
-export const getAccountById = async (id: string): Promise<Account | undefined> => {
+export const getAccountById = async (id: string): Promise<Account> => {
   try {
     const response = await axios.get(`/accounts/${id}`);
     return response.data as Account;

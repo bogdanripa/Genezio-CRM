@@ -75,6 +75,7 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
       status: account.status,
       description: account.description,
       owner: account.owner,
+      accountType: account.accountType || "Client",
       numberOfTeamMembers: account.teamMembers.length,
       numberOfContacts: account.employees.length,
       numberOfInteractions: account.interactions.length,
@@ -128,6 +129,7 @@ app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
   account.industry = req.body.industry;
   account.status = req.body.status;
   account.metrics = req.body.metrics;
+  account.accountType = req.body.accountType;
   await account.save();
   res.send(account);
 });

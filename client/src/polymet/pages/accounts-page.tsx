@@ -113,11 +113,28 @@ export default function AccountsPage() {
       </div>
 
       {filteredAccounts.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAccounts.map((account) => (
-            <AccountCard key={account.id} account={account} />
-          ))}
-        </div>
+        <>
+          <h2 className="text-lg font-semibold mt-6">
+            Clients
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAccounts
+              .filter((account) => account.accountType == "Client")
+              .map((account) => (
+                <AccountCard key={account.id} account={account} />
+              ))}
+          </div>
+          <h2 className="text-lg font-semibold mt-6">
+            Partners
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAccounts
+              .filter((account) => account.accountType == "Partner")
+              .map((account) => (
+                <AccountCard key={account.id} account={account} />
+              ))}
+          </div>
+        </>
       ) : (
         <div className="text-center py-12">
           <h3 className="text-lg font-medium">No accounts found</h3>

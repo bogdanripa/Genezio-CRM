@@ -1,3 +1,4 @@
+import e from 'express';
 import mongoose from 'mongoose'
 
 mongoose.connect(process.env["GENEZIO_CRM_DATABASE_URL1"] || process.env["GENEZIO_CRM_DATABASE_URL"]);
@@ -101,6 +102,11 @@ const userSchema = new mongoose.Schema({
     description: String,
     domain: String,
     industry: String,
+    accountType: {
+      type: String,
+      enum: ['Client', 'Partner'],
+      default: 'Client',
+    },
     website: String,
     status: {
       type: String,

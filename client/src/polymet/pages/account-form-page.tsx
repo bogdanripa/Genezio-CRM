@@ -50,6 +50,9 @@ const accountFormSchema = z.object({
   industry: z.string().min(1, {
     message: "Please select an industry.",
   }),
+  accountType: z.enum(["Client", "Partner"], {
+    errorMap: () => ({ message: "Please select an account type." }),
+  }),
   status: z.string().min(1, {
     message: "Please select a status.",
   }),
@@ -88,6 +91,7 @@ export default function AccountFormPage() {
       website: "",
       description: "",
       industry: "",
+      accountType: "Client",
       status: "lead",
       metrics: {
         contractValue: 0,
@@ -106,6 +110,7 @@ export default function AccountFormPage() {
             website: account.website || "",
             description: account.description || "",
             industry: account.industry || "",
+            accountType: account.accountType || "Client",
             status: account.status,
             metrics: {
               contractValue: account.metrics?.contractValue || 0,
@@ -259,24 +264,51 @@ export default function AccountFormPage() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Brief description of the account"
-                        className="resize-none"
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Brief description of the account"
+                          className="resize-none"
+                          rows={3}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="accountType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account Type*</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an account type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Client">Client</SelectItem>
+                          <SelectItem value="Partner">Partner</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
