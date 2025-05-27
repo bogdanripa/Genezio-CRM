@@ -79,27 +79,35 @@ const userSchema = new mongoose.Schema({
   }, {
     timestamps: true
   });
-  
-  const interactionSchema = new mongoose.Schema({
-    id: String,
-    type: {
-      type: String,
-    },
+
+  const interactionJson = {
+    type: String,
     timestamp: Date,
-    createdAt: Date,
-    createdBy: userSummarySchema,
-    updatedAt: Date,
-    updatedBy: userSummarySchema,
     title: String,
     description: String,
+    attendees: [attendeeSchema],
+    actionItems: [actionItemSchema],
+    isSticky: Boolean,
     metadata: {
       meetingId: String,
       duration: Number,
     },
-    attendees: [attendeeSchema],
-    actionItems: [actionItemSchema],
-    isSticky: Boolean,
-  }, {
+  }
+
+  const basicInteractionSchema = new mongoose.Schema(interactionJson, {
+    _id: false // Prevents Mongoose from adding its own _id to each subdoc
+  });
+
+  // append propertis of "a" to "basicInteractionJson"
+  Object.assign(interactionJson, {
+    id: String,
+    createdAt: Date,
+    createdBy: userSummarySchema,
+    updatedAt: Date,
+    updatedBy: userSummarySchema,
+  });
+  
+  const interactionSchema = new mongoose.Schema(interactionJson, {
     _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
   
@@ -150,6 +158,12 @@ const userSchema = new mongoose.Schema({
   });
   
   const Accounts = mongoose.model('Account', accountSchema);
+  const UserSummary = mongoose.model('UserSummary', userSummarySchema);
+  const Employee = mongoose.model('Employee', employeeSchema);
+  const Attendee = mongoose.model('Attendee', attendeeSchema);
+  const ActionItem = mongoose.model('ActionItem', actionItemSchema);
+  const Interaction = mongoose.model('Interaction', interactionSchema);
+  const BasicInteraction = mongoose.model('BasicInteraction', basicInteractionSchema);
 
-  export { Users, Accounts };
+  export { Users, Accounts, UserSummary, Employee, Attendee, ActionItem, BasicInteraction, Interaction };
 

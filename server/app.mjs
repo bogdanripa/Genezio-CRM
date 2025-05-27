@@ -1,7 +1,84 @@
 import express from "express";
 import { AuthService } from "@genezio/auth";
 import cors from "cors";
-import { Users, Accounts } from "./db.mjs";
+import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem } from "./db.mjs";
+import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import mongooseToSwagger from 'mongoose-to-swagger';
+
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'Genezio CRM APIs',
+    version: '1.0.0',
+    description: 'OpenAPI spec for Genezio CRM APIs',
+  },
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT', // optional
+      },
+    },
+    schemas: {
+      // all your schemas here
+    },
+  },
+  security: [
+    {
+      bearerAuth: [],
+    },
+  ],
+};
+
+function addIdToSchema(schema) {
+  if (!schema.properties.id) {
+    schema.properties.id = { type: 'string' };
+    if (!schema.required) {
+      schema.required = [];
+    }
+    schema.required.push('id');
+  }
+  schema = cleanSchema(schema);
+  return schema;
+}
+function cleanSchema(schema) {
+  if (schema.properties._id) {
+    delete schema.properties._id;
+    if (schema.required && schema.required.includes('_id')) {
+      schema.required = schema.required.filter((field) => field !== '_id');
+    }
+  }
+  return schema;
+}
+
+function addSwaggerSchemas() {
+  const accountSchema = addIdToSchema(mongooseToSwagger(Accounts));
+  const userSummarySchema = addIdToSchema(mongooseToSwagger(UserSummary));
+  const employeeSchema = addIdToSchema(mongooseToSwagger(Employee));
+  const basicInteractionSchema = mongooseToSwagger(BasicInteraction);
+  const interactionSchema = addIdToSchema(mongooseToSwagger(Interaction));
+  const actionItemSchema = cleanSchema(mongooseToSwagger(ActionItem));
+
+  swaggerDefinition.components.schemas = {
+    Account: accountSchema,
+    UserSummary: userSummarySchema,
+    Employee: employeeSchema,
+    BasicInteraction: basicInteractionSchema,
+    Interaction: interactionSchema,
+    ActionItem: actionItemSchema,
+  };
+}
+
+addSwaggerSchemas();
+
+const options = {
+  swaggerDefinition,
+  apis: ['./app.mjs'], // adjust paths to where your JSDoc comments are
+};
+
+const swaggerSpec = swaggerJSDoc(options);
 
 const app = express();
 
@@ -50,6 +127,34 @@ async function getAccount(req, accountId) {
   return account;
 }
 
+/**
+ * @openapi
+ * /users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                   address:
+ *                     type: string
+ */
 app.get("/users", checkAuth, async function (req, res, _next) {
   const address = req.userInfo.address;
   const users = await Users.find({address}).lean();
@@ -64,9 +169,26 @@ app.get("/users", checkAuth, async function (req, res, _next) {
   res.send(users);
 });
 
+/**
+ * @openapi
+ * /accounts:
+ *   get:
+ *     summary: Get all accounts
+ *     tags: [Accounts]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of account
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Account'
+ */
 app.get("/accounts/", checkAuth, async function (req, res, _next) {
   const accounts = await getAllAccounts(req);
-  // keep only name, industry, status, description, owner, number of contacts, number of employees, last updated date
   const filteredAccounts = accounts.map((account) => {
     return {
       id: account.id,
@@ -87,6 +209,31 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
   res.send(filteredAccounts);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}:
+ *   get:
+ *     summary: Get account by ID
+ *     tags: [Accounts]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []  # Optional, if using auth
+ *     responses:
+ *       200:
+ *         description: The account data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Account'
+ *       404:
+ *         description: Account not found
+ */
 app.get("/accounts/:id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const account = await getAccount(req, accountId);
@@ -96,6 +243,70 @@ app.get("/accounts/:id", checkAuth, async function (req, res, _next) {
   res.send(account);
 });
 
+/**
+ * @openapi
+ * /accounts:
+ *   post:
+ *     summary: Create a new account
+ *     tags: [Accounts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               website:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               industry:
+ *                 type: string
+ *                 enum:
+ *                   - Technology
+ *                   - Finance
+ *                   - Healthcare
+ *                   - Manufacturing
+ *                   - Retail
+ *                   - Education
+ *                   - Conglomerate
+ *                   - Other
+ *               accountType:
+ *                 type: string
+ *                 enum: [Client, Partner]
+ *               status:
+ *                 type: string
+ *                 enum: [Lead, Prospect, Qualified, negotiation, Closed Won, Closed Lost, Churned]
+ *               metrics:
+ *                 type: object
+ *                 properties:
+ *                   contractValue:
+ *                     type: number
+ *                   pocValue:
+ *                     type: number
+ *                   probability:
+ *                     type: number
+ *             required:
+ *               - name
+ *               - industry
+ *               - accountType
+ *               - status
+ *     responses:
+ *       201:
+ *         description: Account created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Account'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
 app.post("/accounts", checkAuth, async function (req, res, _next) {
   const newAccount = {
     id: crypto.randomUUID(),
@@ -116,6 +327,77 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
   res.status(201).send(account);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}:
+ *   put:
+ *     summary: Update an account by ID
+ *     tags: [Accounts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               website:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               industry:
+ *                 type: string
+ *                 enum:
+ *                   - Technology
+ *                   - Finance
+ *                   - Healthcare
+ *                   - Manufacturing
+ *                   - Retail
+ *                   - Education
+ *                   - Conglomerate
+ *                   - Other
+ *               accountType:
+ *                 type: string
+ *                 enum: [Client, Partner]
+ *               status:
+ *                 type: string
+ *                 enum: [Lead, Prospect, Qualified, negotiation, Closed Won, Closed Lost, Churned]
+ *               metrics:
+ *                 type: object
+ *                 properties:
+ *                   contractValue:
+ *                     type: number
+ *                   pocValue:
+ *                     type: number
+ *                   probability:
+ *                     type: number
+ *             required:
+ *               - name
+ *               - industry
+ *               - accountType
+ *               - status
+ *     responses:
+ *       201:
+ *         description: Account created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Account'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
 app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const account = await getAccount(req, accountId);
@@ -134,6 +416,27 @@ app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
   res.send(account);
 });
 
+/**
+ * @openapi 
+ * /accounts/{id}:
+ *   delete:
+ *     summary: Delete an account by ID
+ *     tags: [Accounts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Account deleted successfully
+ *       404:
+ *         description: Account not found
+ */
 app.delete("/accounts/:id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const account = await getAccount(req, accountId);
@@ -144,6 +447,46 @@ app.delete("/accounts/:id", checkAuth, async function (req, res, _next) {
   res.status(204).send();
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/teamMembers:
+ *   post:
+ *     summary: Add a team member to an account
+ *     tags: [Account Team Members]
+ *     description: Adds a user as a team member to the specified account. The user must already exist in the system.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: The userId of the user to be added as a team member
+ *     responses:
+ *       201:
+ *         description: User added to the team members successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserSummary'
+ *       404:
+ *         description: Account or user not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const account = await getAccount(req, accountId);
@@ -177,6 +520,36 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
   res.status(201).send(newMember);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/teamMembers/{memberId}:
+ *   delete:
+ *     summary: Remove a team member from an account
+ *     tags: [Account Team Members]
+ *     description: Deletes a user from the team members list of the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: memberId
+ *         in: path
+ *         required: true
+ *         description: The ID of the user to be removed from team members
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Team member removed successfully
+ *       404:
+ *         description: Account or team member not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   let memberId = req.params.memberId;
@@ -204,6 +577,42 @@ app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req
   res.status(204).send();
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/transferOwnership:
+ *   put:
+ *     summary: Transfer account ownership
+ *     tags: [Account Team Members]
+ *     description: Transfers ownership of an account to another user.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: The userId of the new owner
+ *     responses:
+ *       204:
+ *         description: Ownership transferred successfully
+ *       404:
+ *         description: Account or user not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const account = await getAccount(req, accountId);
@@ -226,6 +635,55 @@ app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, 
   res.status(204).send();
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/contacts:
+ *   post:
+ *     summary: Add a contact to an account
+ *     tags: [Account Contacts]
+ *     description: Adds a new contact (employee) to the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - role
+ *             properties:
+ *               name:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Contact added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       404:
+ *         description: Account not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const account = await getAccount(req, accountId);
@@ -248,6 +706,61 @@ app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
   res.status(201).send(newContact);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/contacts/{contactId}:
+ *   put:
+ *     summary: Update an existing contact
+ *     tags: [Account Contacts]
+ *     description: Updates the contact (employee) details associated with the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: contactId
+ *         in: path
+ *         required: true
+ *         description: The ID of the contact to update
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - role
+ *             properties:
+ *               name:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               phone:
+ *                 type: string
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Contact updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       404:
+ *         description: Account or contact not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const contactId = req.params.contactId;
@@ -270,6 +783,36 @@ app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res
   res.send(contact);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/contacts/{contactId}:
+ *   delete:
+ *     summary: Delete a contact from an account
+ *     tags: [Account Contacts]
+ *     description: Removes an existing contact (employee) from the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: contactId
+ *         in: path
+ *         required: true
+ *         description: The ID of the contact to remove
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Contact removed successfully
+ *       404:
+ *         description: Account or contact not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const contactId = req.params.contactId;
@@ -293,6 +836,40 @@ app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, 
   res.status(204).send();
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/interactions:
+ *   post:
+ *     summary: Create a new interaction
+ *     tags: [Account Interactions]
+ *     description: Adds a new interaction to the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BasicInteraction'
+ *     responses:
+ *       201:
+ *         description: Interaction created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Interaction'
+ *       404:
+ *         description: Account not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const account = await getAccount(req, accountId);
@@ -323,6 +900,46 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
   res.status(201).send(newInteraction);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/interactions/{interactionId}:
+ *   put:
+ *     summary: Update an existing interaction
+ *     tags: [Account Interactions]
+ *     description: Updates the details of an existing interaction within the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: interactionId
+ *         in: path
+ *         required: true
+ *         description: The ID of the interaction to update
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BasicInteraction'
+ *     responses:
+ *       200:
+ *         description: Interaction updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Interaction'
+ *       404:
+ *         description: Account or interaction not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const interactionId = req.params.interactionId;
@@ -355,6 +972,36 @@ app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (
   res.send(interaction);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/interactions/{interactionId}:
+ *   delete:
+ *     summary: Delete an interaction
+ *     tags: [Account Interactions]
+ *     description: Removes an interaction from the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: interactionId
+ *         in: path
+ *         required: true
+ *         description: The ID of the interaction to delete
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Interaction deleted successfully
+ *       404:
+ *         description: Account or interaction not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const interactionId = req.params.interactionId;
@@ -378,6 +1025,63 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
   res.status(204).send();
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/interactions/{interactionId}/actionItems/{actionItemId}:
+ *   put:
+ *     summary: Update an action item in an interaction
+ *     tags: [Account Interactions]
+ *     description: Updates the fields of a specific action item within an interaction.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: interactionId
+ *         in: path
+ *         required: true
+ *         description: The ID of the interaction
+ *         schema:
+ *           type: string
+ *       - name: actionItemId
+ *         in: path
+ *         required: true
+ *         description: The ID of the action item to update
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *               completed:
+ *                 type: boolean
+ *               completedAt:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Action item updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ActionItem'
+ *       404:
+ *         description: Account, interaction, or action item not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.put("/accounts/:id/interactions/:interactionId/actionItems/:actionItemId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const interactionId = req.params.interactionId;
@@ -407,6 +1111,40 @@ app.put("/accounts/:id/interactions/:interactionId/actionItems/:actionItemId", c
   res.send(actionItem);
 });
 
+/**
+ * @openapi
+ * /accounts/{id}/interactions/{interactionId}/unstick:
+ *   put:
+ *     summary: Unstick an interaction (this was most likely a sticky note)
+ *     tags: [Account Interactions]
+ *     description: Sets the `isSticky` flag of the specified interaction to `false`.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: interactionId
+ *         in: path
+ *         required: true
+ *         description: The ID of the interaction to unstick
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Interaction unstick successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Interaction'
+ *       404:
+ *         description: Account or interaction not found
+ *       401:
+ *         description: Unauthorized
+ */
 app.put("/accounts/:id/interactions/:interactionId/unstick", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
   const interactionId = req.params.interactionId;
@@ -426,6 +1164,36 @@ app.put("/accounts/:id/interactions/:interactionId/unstick", checkAuth, async fu
   res.send(interaction);
 });
 
+/**
+ * @openapi
+ * /interactions/latest:
+ *   get:
+ *     summary: Get latest interactions across all accounts
+ *     tags: [Accounts]
+ *     description: Returns a list of recent interactions across all accounts, including the creator, type, account name, and creation time.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of recent interactions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                   text:
+ *                     type: string
+ *                     description: A summary of the interaction (e.g. "John added a call to Acme Inc")
+ *                   accountId:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ */
 app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
   const accounts = await getAllAccounts(req);
   const interactionsAcrossAccounts = [];
@@ -449,6 +1217,8 @@ app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
   const latestInteractions = interactionsAcrossAccounts.slice(0, 5);
   res.send(latestInteractions);
 });
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.listen(8080, () => {
   console.log(
