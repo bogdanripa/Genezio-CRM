@@ -73,25 +73,25 @@ export default function AccountMetrics({ accounts }: AccountMetricsProps) {
       title: "Total Accounts",
       value: totalAccounts.toString(),
       description: "Active accounts in the CRM",
-      change: 5, // Example change percentage
+      change: 0, // Example change percentage
     },
     {
       title: "Avg. Contract Value",
       value: formatCurrency(avgContractValue),
       description: "Across all accounts",
-      change: -3, // Example change percentage
+      change: 0, // Example change percentage
     },
     {
       title: "Avg. POC Value",
       value: formatCurrency(avgPOCValue),
       description: "Across all accounts",
-      change: -3, // Example change percentage
+      change: 0, // Example change percentage
     },
     {
       title: "Win Rate",
       value: `${Math.round(winRate)}%`,
       description: "For closed opportunities",
-      change: 8, // Example change percentage
+      change: 0, // Example change percentage
     },
   ];
 
