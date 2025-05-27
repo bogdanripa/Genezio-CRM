@@ -421,6 +421,16 @@ export default function AccountDetailPage() {
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">
+                        POC Value
+                      </h4>
+                      <p className="mt-1 text-lg font-semibold">
+                        $
+                        {account.metrics?.pocValue?.toLocaleString() ||
+                          "0"}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground">
                         Probability
                       </h4>
                       <p className="mt-1 text-lg font-semibold">

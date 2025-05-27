@@ -65,6 +65,7 @@ export type Account = {
   interactions?: AccountInteraction[];
   metrics?: {
     contractValue?: number;
+    pocValue?: number;
     probability?: number;
   };
 };
@@ -83,6 +84,7 @@ export type SimpleAccount = {
   lastInteractionDate?: Date;
   metrics?: {
     contractValue?: number;
+    pocValue?: number;
     probability?: number;
   }
 }

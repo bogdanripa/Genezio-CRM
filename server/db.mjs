@@ -105,6 +105,7 @@ const userSchema = new mongoose.Schema({
   
   const metricsSchema = new mongoose.Schema({
     contractValue: Number,
+    pocValue: Number,
     probability: Number,
   }, {
     _id: false // Prevents Mongoose from adding its own _id to each subdoc

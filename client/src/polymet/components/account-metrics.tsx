@@ -29,11 +29,20 @@ export default function AccountMetrics({ accounts }: AccountMetricsProps) {
   const accountsWithContractValue = accounts.filter(
     (account) => account.metrics?.contractValue !== undefined
   );
+  const accountsWithPOCValue = accounts.filter(
+    (account) => account.metrics?.pocValue !== undefined
+  );
   const avgContractValue = accountsWithContractValue.length
     ? accountsWithContractValue.reduce(
         (sum, account) => sum + (account.metrics?.contractValue || 0),
         0
       ) / accountsWithContractValue.length
+    : 0;
+  const avgPOCValue = accountsWithPOCValue.length
+    ? accountsWithPOCValue.reduce(
+        (sum, account) => sum + (account.metrics?.pocValue || 0),
+        0
+      ) / accountsWithPOCValue.length
     : 0;
 
   // Calculate win rate
@@ -69,6 +78,12 @@ export default function AccountMetrics({ accounts }: AccountMetricsProps) {
     {
       title: "Avg. Contract Value",
       value: formatCurrency(avgContractValue),
+      description: "Across all accounts",
+      change: -3, // Example change percentage
+    },
+    {
+      title: "Avg. POC Value",
+      value: formatCurrency(avgPOCValue),
       description: "Across all accounts",
       change: -3, // Example change percentage
     },

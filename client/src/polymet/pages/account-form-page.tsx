@@ -64,6 +64,12 @@ const accountFormSchema = z.object({
           message: "Contract value must be a positive number.",
         })
         .optional(),
+      pocValue: z.coerce
+        .number()
+        .min(0, {
+          message: "POC value must be a positive number.",
+        })
+        .optional(),
       probability: z.coerce
         .number()
         .min(0, {
@@ -94,8 +100,9 @@ export default function AccountFormPage() {
       accountType: "Client",
       status: "lead",
       metrics: {
-        contractValue: 0,
-        probability: 0,
+        contractValue: undefined,
+        pocValue: undefined,
+        probability: undefined,
       },
     },
   });
@@ -113,8 +120,9 @@ export default function AccountFormPage() {
             accountType: account.accountType || "Client",
             status: account.status,
             metrics: {
-              contractValue: account.metrics?.contractValue || 0,
-              probability: account.metrics?.probability || 0,
+              contractValue: account.metrics?.contractValue || undefined,
+              pocValue: account.metrics?.pocValue || undefined,
+              probability: account.metrics?.probability || undefined,
             },
           });
         } else {
@@ -394,7 +402,7 @@ export default function AccountFormPage() {
                         <Input
                           type="number"
                           min="0"
-                          placeholder="0"
+                          placeholder=""
                           {...field}
                         />
                       </FormControl>
@@ -414,7 +422,27 @@ export default function AccountFormPage() {
                           type="number"
                           min="0"
                           max="100"
-                          placeholder="0"
+                          placeholder=""
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="metrics.pocValue"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>POC Value ($)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder=""
                           {...field}
                         />
                       </FormControl>
