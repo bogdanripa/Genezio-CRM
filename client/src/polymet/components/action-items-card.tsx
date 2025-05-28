@@ -12,13 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckSquare } from "lucide-react";
 import {
   ActionItem,
-  getActionItemsFromInteractions,
+  getActionItemsFromAccount,
   getCompletedActionItems,
   getIncompleteActionItems,
 } from "@/polymet/data/action-items-data";
 import { Account } from "@/polymet/data/accounts-data";
 import ActionItemComponent from "@/polymet/components/action-item";
 import ActionItemDialog from "@/polymet/components/action-item-dialog";
+import AddActionItemButton from "@/polymet/components/add-action-item-button";
 
 interface ActionItemsCardProps {
   account: Account;
@@ -36,12 +37,12 @@ export default function ActionItemsCard({
   onUpdateActionItem,
   onAddActionItem,
 }: ActionItemsCardProps) {
-  const [editingActionItem, setEditingActionItem] = useState<ActionItem | null>(
-    null
-  );
+  const [editingActionItem, setEditingActionItem] = useState<ActionItem | null>(null);
+  const [addActionItem, setAddingActionItem] = useState<ActionItem | null>(null);
+
 
   // Get all action items from interactions
-  const allActionItems = getActionItemsFromInteractions(account.interactions);
+  const allActionItems = getActionItemsFromAccount(account);
   const incompleteItems = getIncompleteActionItems(allActionItems);
   const completedItems = getCompletedActionItems(allActionItems);
 
@@ -50,6 +51,14 @@ export default function ActionItemsCard({
     if (actionItem) {
       setEditingActionItem(actionItem);
     }
+  };
+
+  const handleAddActionItem = () => {
+    setAddingActionItem({
+      title: "",
+      dueDate: new Date().toISOString().split("T")[0], // Default to today
+      completed: false,
+   });
   };
 
   const handleSaveActionItem = (actionItem: Partial<ActionItem>) => {
@@ -102,6 +111,7 @@ export default function ActionItemsCard({
                 )}
               </TabsTrigger>
             </TabsList>
+            <AddActionItemButton size="sm" onClick={handleAddActionItem} />
           </div>
 
           <TabsContent value="active" className="space-y-4">
@@ -168,6 +178,17 @@ export default function ActionItemsCard({
           onSave={handleSaveActionItem}
           actionItem={editingActionItem}
           isNew={false}
+        />
+      )}
+
+      {/* Add Action Item Dialog */}
+      {addActionItem && (
+        <ActionItemDialog
+          open={!!addActionItem}
+          onOpenChange={(open) => !open && setAddingActionItem(null)}
+          onSave={handleSaveActionItem}
+          actionItem={addActionItem}
+          isNew={true}
         />
       )}
     </Card>

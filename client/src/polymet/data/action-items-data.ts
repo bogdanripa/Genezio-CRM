@@ -1,15 +1,14 @@
 import axios from './axios';
 
-import { AccountInteraction } from "./accounts-data";
+import { Account } from "./accounts-data";
 
 export interface ActionItem {
-  id: string;
+  id?: string;
   title: string;
   dueDate: string;
   completed: boolean;
   completedAt?: string;
-  createdAt: string;
-  interactionId: string;
+  createdAt?: string;
   assignedTo?: {
     id: string;
     name: string;
@@ -19,12 +18,14 @@ export interface ActionItem {
 }
 
 // Helper function to extract action items from interactions
-export const getActionItemsFromInteractions = (
-  interactions: AccountInteraction[]
+export const getActionItemsFromAccount = (
+  account: Account
 ): ActionItem[] => {
-  return interactions
-    .filter((interaction) => interaction.actionItems?.length > 0)
-    .flatMap((interaction) => interaction.actionItems || [])
+  if (!account.actionItems) {
+    return [];
+  }
+  // Sort action items by due date
+  return account.actionItems
     .sort(
       (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
     );
@@ -45,59 +46,28 @@ export const getCompletedActionItems = (
 };
 
 // Helper function to mark an action item as complete
-export const completeActionItem = (
+export const completeActionItem = async (
   accountId: string,
-  interactions: AccountInteraction[],
   actionItemId: string
-): AccountInteraction[] => {
-  return interactions.map((interaction) => {
-    if (!interaction.actionItems) return interaction;
-
-    const updatedActionItems = interaction.actionItems.map((item) => {
-      if (item.id === actionItemId) {
-        const newItem = {
-          ...item,
-          completed: true,
-          completedAt: new Date().toISOString(),
-        };
-        axios.put(`/accounts/${accountId}/interactions/${interaction.id}/actionItems/${actionItemId}`, newItem);
-        return newItem;
-      }
-      return item;
-    });
-
-    return {
-      ...interaction,
-      actionItems: updatedActionItems,
-    };
-  });
+): Promise<ActionItem> => {
+  const response = await axios.put(`/accounts/${accountId}/actionItems/${actionItemId}/complete`);
+  return response.data as ActionItem;
 };
 
 // Helper function to update an action item
-export const updateActionItem = (
+export const updateActionItem = async (
   accountId: string,
-  interactions: AccountInteraction[],
   actionItemId: string,
   updates: Partial<ActionItem>
-): AccountInteraction[] => {
-  return interactions.map((interaction) => {
-    if (!interaction.actionItems) return interaction;
+): Promise<ActionItem> => {
+    const response =  await axios.put(`/accounts/${accountId}/actionItems/${actionItemId}`, updates);
+    return response.data as ActionItem;
+};
 
-    const updatedActionItems = interaction.actionItems.map((item) => {
-      if (item.id === actionItemId) {
-        const updatedItem = {
-          ...item,
-          ...updates,
-        };
-        axios.put(`/accounts/${accountId}/interactions/${interaction.id}/actionItems/${actionItemId}`, updatedItem);
-        return updatedItem;
-      }
-      return item;
-    });
-
-    return {
-      ...interaction,
-      actionItems: updatedActionItems,
-    };
-  });
+export const addActionItem = async (
+  accountId: string,
+  actionItem: Partial<ActionItem>
+): Promise<ActionItem> => {
+  const response = await axios.post(`/accounts/${accountId}/actionItems`, actionItem);
+  return response.data as ActionItem;
 };

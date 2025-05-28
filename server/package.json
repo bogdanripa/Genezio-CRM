@@ -12,11 +12,16 @@
     "description": "",
     "dependencies": {
         "@genezio/auth": "^2.1.2",
+        "@langchain/core": "^0.3.57",
+        "@langchain/openai": "^0.5.11",
         "cors": "^2.8.5",
         "express": "^4.19.2",
+        "langchain": "^0.3.27",
         "mongoose": "^8.14.1",
         "mongoose-to-swagger": "^1.5.1",
+        "node-fetch": "^3.3.2",
         "swagger-jsdoc": "^6.2.8",
-        "swagger-ui-express": "^5.0.1"
+        "swagger-ui-express": "^5.0.1",
+        "yaml": "^2.8.0"
     }
 }

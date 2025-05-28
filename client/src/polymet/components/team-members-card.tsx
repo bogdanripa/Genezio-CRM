@@ -51,7 +51,7 @@ export default function TeamMembersCard({
         </div>
         <Button size="sm" onClick={() => setAddMemberDialogOpen(true)}>
           <PlusIcon className="mr-2 h-4 w-4" />
-          Add Member
+          Member
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -1,4 +1,5 @@
 import axios from './axios';
+import { ActionItem } from '@/polymet/data/action-items-data';
 
 export type AccountEmployee = {
   id: string;
@@ -63,6 +64,7 @@ export type Account = {
   }[];
   employees?: AccountEmployee[];
   interactions?: AccountInteraction[];
+  actionItems?: ActionItem[];
   metrics?: {
     contractValue?: number;
     pocValue?: number;

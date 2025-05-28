@@ -45,8 +45,6 @@ import {
   AccountStatus,
 } from "@/polymet/data/accounts-data";
 import AccountStatusBadge from "@/polymet/components/account-status-badge";
-import { ActionItem } from "@/polymet/data/action-items-data";
-import { cn } from "@/lib/utils";
 
 interface AddInteractionDialogProps {
   open: boolean;
@@ -109,13 +107,6 @@ export default function AddEditInteractionDialog({
       ? initialInteraction.attendees
       : []
   );
-  const [actionItems, setActionItems] = useState<Partial<ActionItem>[]>(
-    initialInteraction?.actionItems
-      ? initialInteraction.actionItems.map((item) => ({
-          ...item,
-        }))
-      : []
-  );
 
   const resetForm = () => {
     setActiveTab(
@@ -158,13 +149,6 @@ export default function AddEditInteractionDialog({
         ? initialInteraction.attendees
         : []
     );
-    setActionItems(
-      initialInteraction?.actionItems
-        ? initialInteraction.actionItems.map((item) => ({
-            ...item,
-          }))
-        : []
-    );
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -204,16 +188,6 @@ export default function AddEditInteractionDialog({
 
     baseInteraction.attendees = attendees;
 
-    // Add action items if any
-    if (actionItems.length > 0) {
-      baseInteraction.actionItems = actionItems.map((item) => ({
-        ...item,
-        id: item.id || `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        completed: item.completed ?? false,
-        createdAt: item.createdAt || new Date().toISOString(),
-      }));
-    }
-
     if (initialInteraction?.id) {
       baseInteraction.id = initialInteraction.id;
     }
@@ -224,29 +198,6 @@ export default function AddEditInteractionDialog({
       onAddInteraction(baseInteraction);
     }
     handleOpenChange(false);
-  };
-
-  const handleAddActionItem = () => {
-    setActionItems([
-      ...actionItems,
-      {
-        title: "",
-        dueDate: new Date().toISOString(),
-      },
-    ]);
-  };
-
-  const handleUpdateActionItem = (
-    index: number,
-    updates: Partial<ActionItem>
-  ) => {
-    const updatedItems = [...actionItems];
-    updatedItems[index] = { ...updatedItems[index], ...updates };
-    setActionItems(updatedItems);
-  };
-
-  const handleRemoveActionItem = (index: number) => {
-    setActionItems(actionItems.filter((_, i) => i !== index));
   };
 
   return (
@@ -696,95 +647,6 @@ export default function AddEditInteractionDialog({
             </Tabs>
           </TabsContent>
         </Tabs>
-
-        {/* Action Items Section */}
-        <div className="border-t pt-4 mt-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium flex items-center">
-              <CheckSquare className="h-4 w-4 mr-2" />
-              Action Items
-            </h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddActionItem}
-              className="h-8"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Add Item
-            </Button>
-          </div>
-
-          {actionItems.length > 0 ? (
-            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
-              {actionItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-2 p-3 border rounded-md bg-muted/40"
-                >
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      placeholder="Action item title"
-                      value={item.title}
-                      onChange={(e) =>
-                        handleUpdateActionItem(index, { title: e.target.value })
-                      }
-                      className="bg-background"
-                    />
-
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs whitespace-nowrap">
-                        Due Date:
-                      </Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-xs justify-start font-normal bg-background"
-                          >
-                            <CalendarIcon className="mr-2 h-3 w-3" />
-                            {item.dueDate
-                              ? format(new Date(item.dueDate), "MMM d, yyyy")
-                              : "Select date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={
-                              item.dueDate ? new Date(item.dueDate) : undefined
-                            }
-                            onSelect={(date) =>
-                              date &&
-                              handleUpdateActionItem(index, {
-                                dueDate: date.toISOString(),
-                              })
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                    onClick={() => handleRemoveActionItem(index)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md">
-              No action items added yet
-            </div>
-          )}
-        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>

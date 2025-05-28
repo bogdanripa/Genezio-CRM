@@ -28,6 +28,7 @@ import {
   ActionItem,
   completeActionItem,
   updateActionItem,
+  addActionItem
 } from "@/polymet/data/action-items-data";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -238,16 +239,19 @@ export default function AccountDetailPage() {
     });
   };
 
-  const handleCompleteActionItem = (actionItemId: string) => {
-    const updatedInteractions = completeActionItem(
+  const handleCompleteActionItem = async (actionItemId: string) => {
+    const updatedActionItem = await completeActionItem(
       account.id,
-      account.interactions,
       actionItemId
+    );
+
+    const updatedActionItems = account.actionItems?.map((item) =>
+      item.id === updatedActionItem.id ? updatedActionItem : item
     );
 
     setAccount({
       ...account,
-      interactions: updatedInteractions,
+      actionItems: updatedActionItems,
     });
 
     toast({
@@ -256,20 +260,22 @@ export default function AccountDetailPage() {
     });
   };
 
-  const handleUpdateActionItem = (
+  const handleUpdateActionItem = async (
     actionItemId: string,
     updates: Partial<ActionItem>
   ) => {
-    const updatedInteractions = updateActionItem(
+    const updatedActionItem = await updateActionItem(
       account.id,
-      account.interactions,
       actionItemId,
       updates
+    );
+    const updatedActionItems = account.actionItems?.map((item) =>
+      item.id === updatedActionItem.id ? updatedActionItem : item
     );
 
     setAccount({
       ...account,
-      interactions: updatedInteractions,
+      actionItems: updatedActionItems,
     });
 
     toast({
@@ -278,26 +284,16 @@ export default function AccountDetailPage() {
     });
   };
 
-  const handleAddActionItem = (actionItem: Partial<ActionItem>) => {
-    // Create a new note interaction with the action item
-    const newInteraction: Partial<AccountInteraction> = {
-      type: "note",
+  const handleAddActionItem = async (actionItem: Partial<ActionItem>) => {
+    const addedActionItem = await addActionItem(account.id, actionItem);
+    setAccount({
+      ...account,
+      actionItems: [...(account.actionItems || []), addedActionItem],
+    });
+    toast({
       title: "Action Item Added",
-      description: `Added action item: ${actionItem.title}`,
-      timestamp: new Date().toISOString(),
-      actionItems: [
-        {
-          id: `action-${Date.now()}`,
-          title: actionItem.title || "",
-          dueDate: actionItem.dueDate || new Date().toISOString(),
-          completed: false,
-          createdAt: new Date().toISOString(),
-          interactionId: `interaction-${Date.now()}`,
-        },
-      ],
-    };
-
-    handleAddInteraction(newInteraction);
+      description: "The action item has been added to the account",
+    });
   };
 
   const stickyNotes = account.interactions.filter(

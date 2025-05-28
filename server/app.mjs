@@ -5,6 +5,7 @@ import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, 
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import mongooseToSwagger from 'mongoose-to-swagger';
+//import { llmThis } from "./test.mjs";
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -888,13 +889,22 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
     },
     title: req.body.title,
     description: req.body.description,
-    actionItems: req.body.actionItems,
     attendees: req.body.attendees,
     metadata: req.body.metadata,
     isSticky: req.body.isSticky,
   };
 
   account.interactions.push(newInteraction);
+  // if (req.body.actionItems) {
+  //   for (const actionIntem of req.body.actionItems) {
+  //     const newActionItem = {
+  //       id: crypto.randomUUID(),
+  //       title: actionIntem.title,
+  //       dueDate: actionIntem.dueDate,
+  //     };
+  //     account.actionItems.push(newActionItem);
+  //   }
+  // }
   await account.save();
   res.status(201).send(newInteraction);
 });
@@ -956,7 +966,6 @@ app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (
   interaction.timestamp = req.body.timestamp;
   interaction.title = req.body.title;
   interaction.description = req.body.description;
-  interaction.actionItems = req.body.actionItems;
   interaction.metadata = req.body.metadata;
   interaction.isSticky = req.body.isSticky;
   interaction.attendees = req.body.attendees;
@@ -1026,11 +1035,11 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
 
 /**
  * @openapi
- * /accounts/{id}/interactions/{interactionId}/actionItems/{actionItemId}:
- *   put:
- *     summary: Update an action item in an interaction
- *     tags: [Account Interactions]
- *     description: Updates the fields of a specific action item within an interaction.
+ * /accounts/{id}/actionItems/:
+ *   post:
+ *     summary: Adds an action item
+ *     tags: [Account Action Items]
+ *     description: Adds an action item to an account.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1040,10 +1049,64 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: interactionId
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Action item added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ActionItem'
+ *       404:
+ *         description: Account not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.post("/accounts/:id/actionItems/", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.id;
+  const account = await getAccount(req, accountId);
+  if (!account) {
+    return res.status(404).send({ message: "Account not found" });
+  }
+  
+  const actionItem = {
+    id: crypto.randomUUID(),
+    title: req.body.title,
+    dueDate: req.body.dueDate,
+    completed: false,
+    completedAt: null,
+  };
+  account.actionItems.push(actionItem);
+
+  await account.save();
+  res.send(actionItem);
+});
+
+/**
+ * @openapi
+ * /accounts/{id}/actionItems/{actionItemId}:
+ *   put:
+ *     summary: Update an action item
+ *     tags: [Account Action Items]
+ *     description: Updates the fields of a specific action item.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
  *         in: path
  *         required: true
- *         description: The ID of the interaction
+ *         description: The ID of the account
  *         schema:
  *           type: string
  *       - name: actionItemId
@@ -1077,25 +1140,19 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
  *             schema:
  *               $ref: '#/components/schemas/ActionItem'
  *       404:
- *         description: Account, interaction, or action item not found
+ *         description: Account or action item not found
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id/interactions/:interactionId/actionItems/:actionItemId", checkAuth, async function (req, res, _next) {
+app.put("/accounts/:id/actionItems/:actionItemId", checkAuth, async function (req, res, _next) {
   const accountId = req.params.id;
-  const interactionId = req.params.interactionId;
   const actionItemId = req.params.actionItemId;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
 
-  const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
-  if (!interaction) {
-    return res.status(404).send({ message: "Interaction not found" });
-  }
-
-  const actionItem = interaction.actionItems.find((item) => item.id === actionItemId);
+  const actionItem = account.actionItems.find((item) => item.id === actionItemId);
   if (!actionItem) {
     return res.status(404).send({ message: "Action item not found" });
   }
@@ -1105,6 +1162,60 @@ app.put("/accounts/:id/interactions/:interactionId/actionItems/:actionItemId", c
   actionItem.completed = req.body.completed;
   if (req.body.completedAt)
     actionItem.completedAt = new Date();
+
+  await account.save();
+  res.send(actionItem);
+});
+
+/**
+ * @openapi
+ * /accounts/{id}/actionItems/{actionItemId}/complete:
+ *   put:
+ *     summary: Completes an action item
+ *     tags: [Account Action Items]
+ *     description: Completes a specific action item.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *       - name: actionItemId
+ *         in: path
+ *         required: true
+ *         description: The ID of the action item to update
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Action item completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ActionItem'
+ *       404:
+ *         description: Account or action item not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.put("/accounts/:id/actionItems/:actionItemId/complete", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.id;
+  const actionItemId = req.params.actionItemId;
+  const account = await getAccount(req, accountId);
+  if (!account) {
+    return res.status(404).send({ message: "Account not found" });
+  }
+
+  const actionItem = account.actionItems.find((item) => item.id === actionItemId);
+  if (!actionItem) {
+    return res.status(404).send({ message: "Action item not found" });
+  }
+
+  actionItem.completed = true;
+  actionItem.completedAt = new Date();
 
   await account.save();
   res.send(actionItem);
@@ -1217,6 +1328,15 @@ app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
   res.send(latestInteractions);
 });
 
+// app.get('/llmThis', async (req, res) => {
+//   try {
+//     const response = await llmThis();
+//     res.send(response);
+//   } catch (error) {
+//     console.error('Error executing llmThis:', error);
+//     res.status(500).send('Error executing llmThis');
+//   }
+// });
 
 app.get('/docs/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');

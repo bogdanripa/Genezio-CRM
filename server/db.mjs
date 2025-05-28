@@ -70,12 +70,27 @@ const userSchema = new mongoose.Schema({
 
   
   const actionItemSchema = new mongoose.Schema({
-    id: String,
-    title: String,
-    dueDate: Date,
-    completed: Boolean,
-    completedAt: Date,
-    interactionId: String,
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    dueDate: {
+      type: Date,
+      required: true,
+    },
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+    completedAt: {
+      type: Date,
+      required: false,
+    }
   }, {
     timestamps: true
   });
@@ -86,7 +101,6 @@ const userSchema = new mongoose.Schema({
     title: String,
     description: String,
     attendees: [attendeeSchema],
-    actionItems: [actionItemSchema],
     isSticky: Boolean,
     metadata: {
       meetingId: String,
@@ -151,6 +165,10 @@ const userSchema = new mongoose.Schema({
     interactions: {
         type: [interactionSchema],
         default: [],
+    },
+    actionItems: {
+      type: [actionItemSchema],
+      default: [],
     },
     metrics: metricsSchema,
   }, {
