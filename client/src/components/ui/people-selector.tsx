@@ -93,23 +93,15 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
   multiSelect = true
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-  const isOpenRef = useRef(isOpen);
 
-  // Keep isOpenRef in sync
-  useEffect(() => {
-    isOpenRef.current = isOpen;
-  }, [isOpen]);
-
-
-  const toggleDropdown = () => {
+  const toggleDropdown = (e) => {
     if (!onChange) return;
     setIsOpen(prev => !prev);
+    e.stopPropagation();
   }
 
   useEffect(() => {
-    const handleClickOutside = e => {
-      if (!containerRef.current || containerRef.current.contains(e.target)) return;
+    const handleClickOutside = () => {
       setIsOpen(false);
     };
 
@@ -136,7 +128,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
   };
 
   return (
-    <Container ref={containerRef}>
+    <Container>
       <Control onClick={toggleDropdown}>
         {selectedPeople.length > 0 ? (
           <Avatars>
@@ -158,7 +150,7 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
       </Control>
 
       {isOpen && (
-        <Dropdown>
+        <Dropdown onClick={e => e.stopPropagation()}>
           {teamMembers.length > 0 && (
             <Group>
               <GroupLabel>Team Members</GroupLabel>

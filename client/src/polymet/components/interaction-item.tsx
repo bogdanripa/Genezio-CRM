@@ -201,7 +201,7 @@ export default function InteractionItem({
                     {part}
                   </a>
                 ) : (
-                  <>{part}</>
+                  <span key={j}>{part}</span>
                 )
               )}
               <br />

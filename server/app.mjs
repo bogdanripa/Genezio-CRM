@@ -1055,12 +1055,22 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - title
+ *               - dueDate
  *             properties:
  *               title:
  *                 type: string
  *               dueDate:
  *                 type: string
  *                 format: date-time
+ *               assignedTo:
+ *                 type: object
+ *                 required:
+ *                   - id
+ *                 properties:
+ *                   id:
+ *                     type: string
  *     responses:
  *       200:
  *         description: Action item added successfully
@@ -1069,7 +1079,14 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
  *             schema:
  *               $ref: '#/components/schemas/ActionItem'
  *       404:
- *         description: Account not found
+ *         description: Account or assigned user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
  *       401:
  *         description: Unauthorized
  */
@@ -1140,11 +1157,13 @@ app.post("/accounts/:id/actionItems/", checkAuth, async function (req, res, _nex
  *               dueDate:
  *                 type: string
  *                 format: date-time
- *               completed:
- *                 type: boolean
- *               completedAt:
- *                 type: string
- *                 format: date-time
+ *               assignedTo:
+ *                 type: object
+ *                 required:
+ *                   - id
+ *                 properties:
+ *                   id:
+ *                     type: string 
  *     responses:
  *       200:
  *         description: Action item updated successfully
