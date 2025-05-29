@@ -29,6 +29,11 @@ interface ActionItemsCardProps {
     updates: Partial<ActionItem>
   ) => void;
   onAddActionItem?: (actionItem: Partial<ActionItem>) => void;
+  teamMembers?: {
+    id: string;
+    name: string;
+    email: string;
+  }[];
 }
 
 export default function ActionItemsCard({
@@ -36,6 +41,7 @@ export default function ActionItemsCard({
   onCompleteActionItem,
   onUpdateActionItem,
   onAddActionItem,
+  teamMembers
 }: ActionItemsCardProps) {
   const [editingActionItem, setEditingActionItem] = useState<ActionItem | null>(null);
   const [addActionItem, setAddingActionItem] = useState<ActionItem | null>(null);
@@ -178,6 +184,7 @@ export default function ActionItemsCard({
           onSave={handleSaveActionItem}
           actionItem={editingActionItem}
           isNew={false}
+          teamMembers={teamMembers}
         />
       )}
 
@@ -189,6 +196,7 @@ export default function ActionItemsCard({
           onSave={handleSaveActionItem}
           actionItem={addActionItem}
           isNew={true}
+          teamMembers={teamMembers}
         />
       )}
     </Card>

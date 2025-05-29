@@ -81,14 +81,16 @@ interface PeopleSelectorProps {
   selectedPeople: Person[];
   onChange?: (people: Person[]) => void;
   placeholder?: string;
+  multiSelect?: boolean;
 }
 
 const PeopleSelector: React.FC<PeopleSelectorProps> = ({
   teamMembers,
-  contacts,
+  contacts = [],
   selectedPeople,
   onChange,
-  placeholder = 'Choose Attendees',
+  placeholder = 'Choose',
+  multiSelect = true
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -107,7 +109,6 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
 
   useEffect(() => {
     const handleClickOutside = e => {
-      console.log('click outside', e.target);
       if (!containerRef.current || containerRef.current.contains(e.target)) return;
       setIsOpen(false);
     };
@@ -122,10 +123,15 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({
   }, []);
 
   const handleSelect = person => {
-    const exists = selectedPeople.find(p => p.id === person.id);
-    const updated = exists
-      ? selectedPeople.filter(p => p.id !== person.id)
-      : [...selectedPeople, person];
+    let updated;
+    if (multiSelect) {
+      const exists = selectedPeople.find(p => p.id === person.id);
+      updated = exists
+        ? selectedPeople.filter(p => p.id !== person.id)
+        : [...selectedPeople, person];
+    } else {
+      updated = selectedPeople[0]?.id === person.id ? [] : [person];
+    }
     onChange(updated);
   };
 

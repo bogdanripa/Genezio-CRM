@@ -90,7 +90,11 @@ const userSchema = new mongoose.Schema({
     completedAt: {
       type: Date,
       required: false,
-    }
+    },
+    assignedTo: {
+      type: userSummarySchema,
+      required: false,
+    },
   }, {
     timestamps: true
   });

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ActionItem } from "@/polymet/data/action-items-data";
+import PeopleSelector from "@/components/ui/people-selector";
 
 interface ActionItemDialogProps {
   open: boolean;
@@ -26,6 +27,11 @@ interface ActionItemDialogProps {
   onSave: (actionItem: Partial<ActionItem>) => void;
   actionItem?: ActionItem;
   isNew?: boolean;
+  teamMembers?: {
+    id: string;
+    name: string;
+    email: string;
+  }[];
 }
 
 export default function ActionItemDialog({
@@ -34,9 +40,11 @@ export default function ActionItemDialog({
   onSave,
   actionItem,
   isNew = true,
+  teamMembers = []
 }: ActionItemDialogProps) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [assignedTo, setAssignedTo] = useState<any>(null); // Assuming assignedTo is an array of user IDs
   const [error, setError] = useState<string | null>(null);
 
   // Initialize form when dialog opens or actionItem changes
@@ -44,10 +52,12 @@ export default function ActionItemDialog({
     if (actionItem) {
       setTitle(actionItem.title);
       setDueDate(new Date(actionItem.dueDate));
+      setAssignedTo(actionItem.assignedTo || null);
     } else {
       // Set default values for new action item
       setTitle("");
       setDueDate(undefined);
+      setAssignedTo(null);
     }
     setError(null);
   }, [actionItem, open]);
@@ -68,6 +78,7 @@ export default function ActionItemDialog({
     const updatedActionItem: Partial<ActionItem> = {
       title: title.trim(),
       dueDate: dueDate.toISOString(),
+      assignedTo: assignedTo
     };
 
     // If editing, include the id
@@ -126,6 +137,19 @@ export default function ActionItemDialog({
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="assignedTo">Assigned To</Label>
+            <PeopleSelector
+              selectedPeople={assignedTo?[assignedTo]:[]}
+              teamMembers={teamMembers}
+              onChange={(assignedTos) => {
+                if (assignedTos && assignedTos.length>0)
+                  setAssignedTo(assignedTos[0])
+              }}
+              multiSelect={false}
+            />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

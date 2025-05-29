@@ -5,7 +5,7 @@ import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, 
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import mongooseToSwagger from 'mongoose-to-swagger';
-//import { llmThis } from "./test.mjs";
+import SmartAgent from './agent/SmartAgent.mjs';
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -1087,6 +1087,19 @@ app.post("/accounts/:id/actionItems/", checkAuth, async function (req, res, _nex
     completed: false,
     completedAt: null,
   };
+
+  if (req.body.assignedTo) {
+    const assignedUser = await Users.findOne({
+      userId: req.body.assignedTo.id
+    }).lean();
+    if (!assignedUser) {
+      return res.status(404).send({ message: "Assigned user not found" });
+    }
+    assignedUser.id = assignedUser.userId;
+    delete assignedUser.userId;
+    actionItem.assignedTo = assignedUser;
+  }
+
   account.actionItems.push(actionItem);
 
   await account.save();
@@ -1159,9 +1172,17 @@ app.put("/accounts/:id/actionItems/:actionItemId", checkAuth, async function (re
 
   actionItem.title = req.body.title;
   actionItem.dueDate = req.body.dueDate;
-  actionItem.completed = req.body.completed;
-  if (req.body.completedAt)
-    actionItem.completedAt = new Date();
+  if (req.body.assignedTo) {
+    const assignedUser = await Users.findOne({
+      userId: req.body.assignedTo.id
+    }).lean();
+    if (!assignedUser) {
+      return res.status(404).send({ message: "Assigned user not found" });
+    }
+    assignedUser.id = assignedUser.userId;
+    delete assignedUser.userId;
+    actionItem.assignedTo = assignedUser;
+  }
 
   await account.save();
   res.send(actionItem);
@@ -1328,15 +1349,13 @@ app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
   res.send(latestInteractions);
 });
 
-// app.get('/llmThis', async (req, res) => {
-//   try {
-//     const response = await llmThis();
-//     res.send(response);
-//   } catch (error) {
-//     console.error('Error executing llmThis:', error);
-//     res.status(500).send('Error executing llmThis');
-//   }
-// });
+app.get('/agent/test', async (req, res) => {
+  console.log("Testing SmartAgent...");
+  const smartAgent = new SmartAgent();
+  const response = "1";//await smartAgent.invoke("Who is on the BCR account?");
+  console.log(response);
+  res.send(response);
+});
 
 app.get('/docs/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');

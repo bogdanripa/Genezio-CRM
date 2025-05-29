@@ -492,6 +492,7 @@ export default function AccountDetailPage() {
               onCompleteActionItem={handleCompleteActionItem}
               onUpdateActionItem={handleUpdateActionItem}
               onAddActionItem={handleAddActionItem}
+              teamMembers={[account.owner, ...account.teamMembers]}
             />
 
             {/* Team Members */}
