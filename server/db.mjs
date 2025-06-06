@@ -21,9 +21,35 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: false,
     },
+    phone: {
+      type: String,
+      required: false,
+    },
+    emailCode: {
+      type: String,
+      required: false,
+    },
   });
   
   const Users = mongoose.model('User', userSchema);
+
+  const activeSessionSchema = new mongoose.Schema({
+    userId: {
+      type: String,
+      required: true,
+    },
+    token: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    date: {
+      type: Date,
+      default: Date.now,
+    },
+  });
+
+  const ActiveSessions = mongoose.model('ActiveSessions', activeSessionSchema);
   
   const userSummarySchema = new mongoose.Schema({
     id: {
@@ -187,5 +213,5 @@ const userSchema = new mongoose.Schema({
   const Interaction = mongoose.model('Interaction', interactionSchema);
   const BasicInteraction = mongoose.model('BasicInteraction', basicInteractionSchema);
 
-  export { Users, Accounts, UserSummary, Employee, Attendee, ActionItem, BasicInteraction, Interaction };
+  export { Users, Accounts, UserSummary, Employee, Attendee, ActionItem, BasicInteraction, Interaction, ActiveSessions };
 

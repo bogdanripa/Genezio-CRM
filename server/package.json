@@ -12,6 +12,7 @@
     "description": "",
     "dependencies": {
         "@genezio/auth": "^2.1.2",
+        "@genezio/email-service": "^1.0.2",
         "@langchain/core": "^0.3.57",
         "@langchain/openai": "^0.5.11",
         "cors": "^2.8.5",

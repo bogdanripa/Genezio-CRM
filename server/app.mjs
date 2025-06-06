@@ -1,11 +1,12 @@
 import express from "express";
 import { AuthService } from "@genezio/auth";
 import cors from "cors";
-import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem } from "./db.mjs";
+import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem, ActiveSessions } from "./db.mjs";
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import mongooseToSwagger from 'mongoose-to-swagger';
 import SmartAgent from './agent/SmartAgent.mjs';
+import emailAuth from './emailCodeAuth.mjs';
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -84,6 +85,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/auth/email-code', emailAuth);
 
 async function checkAuth(req, res, next) {
   try {
