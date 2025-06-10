@@ -39,6 +39,14 @@ router.post("/get-token", async function (req, res, _next) {
     });
 });
 
+function generate16DigitCode() {
+  let code = '';
+  for (let i = 0; i < 16; i++) {
+    code += Math.floor(Math.random() * 10);
+  }
+  return code;
+}
+
 router.post("/init", async function (req, res, _next) {
     const email = req.body.email;
     if (!email) {
@@ -49,7 +57,8 @@ router.post("/init", async function (req, res, _next) {
         return res.status(404).send({ message: "User not found" });
     }
 
-    const code = crypto.randomBytes(3).toString("hex"); // Generate a random 6-digit code
+    // generate a 16 digits code
+    const code = generate16DigitCode();
 
     const response = await MailService.sendMail({
         emailServiceToken: process.env.EMAIL_SERVICE_TOKEN,
@@ -69,7 +78,7 @@ router.post("/init", async function (req, res, _next) {
     await user.save();
 
     res.status(200).send({
-        message: "An email was sent with the code to authenticate",
+        message: "An email was sent with the code to authenticate. Please share it back with me.",
     });
 });
 
