@@ -126,12 +126,26 @@ const userSchema = new mongoose.Schema({
   });
 
   const interactionJson = {
-    type: String,
-    timestamp: Date,
-    title: String,
+    type: {
+      type: String,
+      enum: ['call', 'email', 'meeting', "whatsapp", 'note', 'status_change'],
+      required: true,
+    },
+    timestamp: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    title: {
+      type: String,
+      required: true,
+    },
     description: String,
     attendees: [attendeeSchema],
-    isSticky: Boolean,
+    isSticky: {
+      type: Boolean,
+      default: false,
+    },
     metadata: {
       meetingId: String,
       duration: Number,
