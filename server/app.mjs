@@ -242,6 +242,10 @@ app.get("/accounts/:account_id", checkAuth, async function (req, res, _next) {
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
+  if (account.interactions && account.interactions.length)
+    account.interactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  if (account.actionItems && account.actionItems.length)
+    account.actionItems.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
   res.send(account);
 });
 
