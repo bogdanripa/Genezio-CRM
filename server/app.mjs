@@ -133,7 +133,7 @@ async function getAccount(req, accountId) {
  * @openapi
  * /users:
  *   get:
- *     summary: Get all users
+ *     summary: Get all users (colleagues) from my organization
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -175,7 +175,7 @@ app.get("/users", checkAuth, async function (req, res, _next) {
  * @openapi
  * /accounts:
  *   get:
- *     summary: Get all accounts
+ *     summary: Get all accounts from my organization, including account_id, name, industry, status, description, owner, accountType, numberOfTeamMembers, numberOfContacts, numberOfInteractions, lastInteractionDate, updatedAt
  *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
@@ -213,12 +213,12 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
 
 /**
  * @openapi
- * /accounts/{id}:
+ * /accounts/{account_id}:
  *   get:
- *     summary: Get account by ID
+ *     summary: Get account details by account_id
  *     tags: [Accounts]
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -236,8 +236,8 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
  *       404:
  *         description: Account not found
  */
-app.get("/accounts/:id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.get("/accounts/:account_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -331,14 +331,14 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
 
 /**
  * @openapi
- * /accounts/{id}:
+ * /accounts/{account_id}:
  *   put:
- *     summary: Update an account by ID
+ *     summary: Update an account by account_id
  *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -400,8 +400,8 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.put("/accounts/:account_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -420,14 +420,14 @@ app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
 
 /**
  * @openapi 
- * /accounts/{id}:
+ * /accounts/{account_id}:
  *   delete:
- *     summary: Delete an account by ID
+ *     summary: Delete an account by account_id
  *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -439,8 +439,8 @@ app.put("/accounts/:id", checkAuth, async function (req, res, _next) {
  *       404:
  *         description: Account not found
  */
-app.delete("/accounts/:id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.delete("/accounts/:account_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -451,15 +451,15 @@ app.delete("/accounts/:id", checkAuth, async function (req, res, _next) {
 
 /**
  * @openapi
- * /accounts/{id}/teamMembers:
+ * /accounts/{account_id}/teamMembers:
  *   post:
- *     summary: Add a team member to an account
+ *     summary: Add a team member to an existing account, identified by its account_id
  *     tags: [Account Team Members]
  *     description: Adds a user as a team member to the specified account. The user must already exist in the system.
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -489,8 +489,8 @@ app.delete("/accounts/:id", checkAuth, async function (req, res, _next) {
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -524,7 +524,7 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
 
 /**
  * @openapi
- * /accounts/{id}/teamMembers/{memberId}:
+ * /accounts/{account_id}/teamMembers/{team_member_id}:
  *   delete:
  *     summary: Remove a team member from an account
  *     tags: [Account Team Members]
@@ -532,13 +532,13 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: memberId
+ *       - name: team_member_id
  *         in: path
  *         required: true
  *         description: The ID of the user to be removed from team members
@@ -552,9 +552,9 @@ app.post("/accounts/:id/teamMembers", checkAuth, async function (req, res, _next
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  let memberId = req.params.memberId;
+app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  let memberId = req.params.team_member_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -581,7 +581,7 @@ app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req
 
 /**
  * @openapi
- * /accounts/{id}/transferOwnership:
+ * /accounts/{account_id}/transferOwnership:
  *   put:
  *     summary: Transfer account ownership
  *     tags: [Account Team Members]
@@ -589,7 +589,7 @@ app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -615,8 +615,8 @@ app.delete("/accounts/:id/teamMembers/:memberId", checkAuth, async function (req
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -639,7 +639,7 @@ app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, 
 
 /**
  * @openapi
- * /accounts/{id}/contacts:
+ * /accounts/{account_id}/contacts:
  *   post:
  *     summary: Add a contact to an account
  *     tags: [Account Contacts]
@@ -647,7 +647,7 @@ app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, 
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -686,8 +686,8 @@ app.put("/accounts/:id/transferOwnership", checkAuth, async function (req, res, 
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -710,7 +710,7 @@ app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
 
 /**
  * @openapi
- * /accounts/{id}/contacts/{contactId}:
+ * /accounts/{account_id}/contacts/{contact_id}:
  *   put:
  *     summary: Update an existing contact
  *     tags: [Account Contacts]
@@ -718,13 +718,13 @@ app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: contactId
+ *       - name: contact_id
  *         in: path
  *         required: true
  *         description: The ID of the contact to update
@@ -763,9 +763,9 @@ app.post("/accounts/:id/contacts", checkAuth, async function (req, res, _next) {
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  const contactId = req.params.contactId;
+app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  const contactId = req.params.contact_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -787,7 +787,7 @@ app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res
 
 /**
  * @openapi
- * /accounts/{id}/contacts/{contactId}:
+ * /accounts/{account_id}/contacts/{contact_id}:
  *   delete:
  *     summary: Delete a contact from an account
  *     tags: [Account Contacts]
@@ -795,13 +795,13 @@ app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: contactId
+ *       - name: contact_id
  *         in: path
  *         required: true
  *         description: The ID of the contact to remove
@@ -815,9 +815,9 @@ app.put("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  const contactId = req.params.contactId;
+app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  const contactId = req.params.contact_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -840,7 +840,7 @@ app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, 
 
 /**
  * @openapi
- * /accounts/{id}/interactions:
+ * /accounts/{account_id}/interactions:
  *   post:
  *     summary: Create a new interaction
  *     tags: [Account Interactions]
@@ -848,7 +848,7 @@ app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, 
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -872,8 +872,8 @@ app.delete("/accounts/:id/contacts/:contactId", checkAuth, async function (req, 
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.post("/accounts/:account_id/interactions", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -913,7 +913,7 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
 
 /**
  * @openapi
- * /accounts/{id}/interactions/{interactionId}:
+ * /accounts/{account_id}/interactions/{interaction_id}:
  *   put:
  *     summary: Update an existing interaction
  *     tags: [Account Interactions]
@@ -921,13 +921,13 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: interactionId
+ *       - name: interaction_id
  *         in: path
  *         required: true
  *         description: The ID of the interaction to update
@@ -951,9 +951,9 @@ app.post("/accounts/:id/interactions", checkAuth, async function (req, res, _nex
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  const interactionId = req.params.interactionId;
+app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  const interactionId = req.params.interaction_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -984,7 +984,7 @@ app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (
 
 /**
  * @openapi
- * /accounts/{id}/interactions/{interactionId}:
+ * /accounts/{account_id}/interactions/{interaction_id}:
  *   delete:
  *     summary: Delete an interaction
  *     tags: [Account Interactions]
@@ -992,13 +992,13 @@ app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: interactionId
+ *       - name: interaction_id
  *         in: path
  *         required: true
  *         description: The ID of the interaction to delete
@@ -1012,9 +1012,9 @@ app.put("/accounts/:id/interactions/:interactionId", checkAuth, async function (
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  const interactionId = req.params.interactionId;
+app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  const interactionId = req.params.interaction_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -1037,7 +1037,7 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
 
 /**
  * @openapi
- * /accounts/{id}/actionItems/:
+ * /accounts/{account_id}/actionItems/:
  *   post:
  *     summary: Adds an action item
  *     tags: [Account Action Items]
@@ -1045,7 +1045,7 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
@@ -1092,8 +1092,8 @@ app.delete("/accounts/:id/interactions/:interactionId", checkAuth, async functio
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:id/actionItems/", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
+app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -1127,7 +1127,7 @@ app.post("/accounts/:id/actionItems/", checkAuth, async function (req, res, _nex
 
 /**
  * @openapi
- * /accounts/{id}/actionItems/{actionItemId}:
+ * /accounts/{account_id}/actionItems/{action_item_id}:
  *   put:
  *     summary: Update an action item
  *     tags: [Account Action Items]
@@ -1135,13 +1135,13 @@ app.post("/accounts/:id/actionItems/", checkAuth, async function (req, res, _nex
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: actionItemId
+ *       - name: action_item_id
  *         in: path
  *         required: true
  *         description: The ID of the action item to update
@@ -1178,9 +1178,9 @@ app.post("/accounts/:id/actionItems/", checkAuth, async function (req, res, _nex
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id/actionItems/:actionItemId", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  const actionItemId = req.params.actionItemId;
+app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  const actionItemId = req.params.action_item_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -1211,7 +1211,7 @@ app.put("/accounts/:id/actionItems/:actionItemId", checkAuth, async function (re
 
 /**
  * @openapi
- * /accounts/{id}/actionItems/{actionItemId}/complete:
+ * /accounts/{account_id}/actionItems/{action_item_id}/complete:
  *   put:
  *     summary: Completes an action item
  *     tags: [Account Action Items]
@@ -1219,13 +1219,13 @@ app.put("/accounts/:id/actionItems/:actionItemId", checkAuth, async function (re
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: actionItemId
+ *       - name: action_item_id
  *         in: path
  *         required: true
  *         description: The ID of the action item to update
@@ -1243,9 +1243,9 @@ app.put("/accounts/:id/actionItems/:actionItemId", checkAuth, async function (re
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id/actionItems/:actionItemId/complete", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  const actionItemId = req.params.actionItemId;
+app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  const actionItemId = req.params.action_item_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -1265,7 +1265,7 @@ app.put("/accounts/:id/actionItems/:actionItemId/complete", checkAuth, async fun
 
 /**
  * @openapi
- * /accounts/{id}/interactions/{interactionId}/unstick:
+ * /accounts/{account_id}/interactions/{interaction_id}/unstick:
  *   put:
  *     summary: Unstick an interaction (this was most likely a sticky note)
  *     tags: [Account Interactions]
@@ -1273,13 +1273,13 @@ app.put("/accounts/:id/actionItems/:actionItemId/complete", checkAuth, async fun
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
+ *       - name: account_id
  *         in: path
  *         required: true
  *         description: The ID of the account
  *         schema:
  *           type: string
- *       - name: interactionId
+ *       - name: interaction_id
  *         in: path
  *         required: true
  *         description: The ID of the interaction to unstick
@@ -1297,9 +1297,9 @@ app.put("/accounts/:id/actionItems/:actionItemId/complete", checkAuth, async fun
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:id/interactions/:interactionId/unstick", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.id;
-  const interactionId = req.params.interactionId;
+app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth, async function (req, res, _next) {
+  const accountId = req.params.account_id;
+  const interactionId = req.params.interaction_id;
   const account = await getAccount(req, accountId);
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
@@ -1368,6 +1368,93 @@ app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
 
   const latestInteractions = interactionsAcrossAccounts.slice(0, 5);
   res.send(latestInteractions);
+});
+
+/**
+ * @openapi
+ * /find:
+ *   get:
+ *     summary: Find accounts, contacts, team members, interactions, and action items by name
+ *     tags: [Accounts]
+ *     description: Free text search for accounts, contacts, team members, interactions, and action items by name.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: name
+ *         in: query
+ *         required: true
+ *         description: The name to search for in accounts, contacts, team members, interactions, and action items.
+ *         schema:
+ *           type: string
+ */
+app.get("/find", checkAuth, async function (req, res, _next) {
+  const accounts = await getAllAccounts(req);
+  const query = req.query.name;
+  const results = [];
+  if (!query) {
+    return res.status(400).send({ message: "Query parameter 'name' is required" });
+  }
+  const regex = new RegExp(query, 'i'); // Case-insensitive search
+  for (const account of accounts) {
+    if (regex.test(account.name)) {
+      results.push({
+        "type": "account",
+        "account_id": account.id,
+        "account_name": account.name,
+      });
+    }
+    for (const contact of account.employees) {
+      if (regex.test(contact.name)) {
+        results.push({
+          "type": "contact",
+          "account_id": account.id,
+          "account_name": account.name,
+          "contact_id": contact.id,
+          "contact_name": contact.name,
+          "contact_role": contact.role,
+          "contact_email": contact.email,
+          "contact_phone": contact.phone,
+          "contact_notes": contact.notes,
+        });
+      }
+    }
+    for (const teamMember of account.teamMembers) {
+      if (regex.test(teamMember.name)) {
+        results.push({
+          "type": "team_member",
+          "account_id": account.id,
+          "account_name": account.name,
+          "team_member_id": teamMember.id,
+          "team_member_name": teamMember.name,
+          "team_member_email": teamMember.email,
+          "team_member_role": teamMember.role,
+        });
+      }
+    }
+    for (const interaction of account.interactions) {
+      if (regex.test(interaction.title)) {
+        results.push({
+          "type": "interaction",
+          "account_id": account.id,
+          "account_name": account.name,
+          "interaction_id": interaction.id,
+          "interaction_title": interaction.title,
+        });
+      }
+    }
+    for (const actionItem of account.actionItems) {
+      if (regex.test(actionItem.title)) {
+        results.push({
+          "type": "action_item",
+          "account_id": account.id,
+          "account_name": account.name,
+          "action_item_id": actionItem.id,
+          "action_item_title": actionItem.title,
+        });
+      }      
+    }
+  }
+  res.status(200).send(results);
 });
 
 app.get('/agent/test', async (req, res) => {
