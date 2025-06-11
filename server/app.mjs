@@ -215,7 +215,7 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
  * @openapi
  * /accounts/{account_id}:
  *   get:
- *     summary: Get account details by account_id
+ *     summary: Get account details by account_id, including all interactions (meeting notes, calls, etc), action items, team members, and contacts
  *     tags: [Accounts]
  *     parameters:
  *       - name: account_id
