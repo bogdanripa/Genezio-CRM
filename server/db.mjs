@@ -128,7 +128,7 @@ const userSchema = new mongoose.Schema({
   const interactionJson = {
     type: {
       type: String,
-      enum: ['call', 'email', 'meeting', "whatsapp", 'note', 'status_change'],
+      enum: ['call', 'email', 'meeting', "whatsapp", 'note', 'status_change', 'sticky_note'],
       required: true,
     },
     timestamp: {
