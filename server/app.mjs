@@ -883,6 +883,14 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     return res.status(404).send({ message: "Account not found" });
   }
 
+  if (!req.body.title) {
+    return res.status(400).send({ message: "Interaction title is required" });
+  }
+
+  if (!req.body.type) {
+    return res.status(400).send({ message: "Interaction type is required" });
+  }
+
   const newInteraction = {
     id: crypto.randomUUID(),
     type: req.body.type,
