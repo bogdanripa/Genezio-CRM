@@ -337,7 +337,7 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
  * @openapi
  * /accounts/{account_id}:
  *   put:
- *     summary: Update an account by account_id
+ *     summary: Update an account by account_id. Call this only if you need to update an existing account.
  *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
@@ -587,9 +587,9 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
  * @openapi
  * /accounts/{account_id}/transferOwnership:
  *   put:
- *     summary: Transfer account ownership
+ *     summary: Transfers ownership of an account to another user. Call this only if you need to transfer ownership of an existing account.
  *     tags: [Account Team Members]
- *     description: Transfers ownership of an account to another user.
+ *     description: Transfers ownership of an account to another user. Call this only if you need to transfer ownership of an existing account.
  *     security:
  *       - bearerAuth: []
  *     parameters:
