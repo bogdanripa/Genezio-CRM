@@ -1478,6 +1478,7 @@ app.get("/find", checkAuth, async function (req, res, _next) {
       results.push({
         "type": "account",
         "account_id": account.id,
+        "url": `https://genezio-crm.app.genez.io/accounts/${account.id}`,
         "account_name": account.name,
       });
     }
@@ -1486,6 +1487,7 @@ app.get("/find", checkAuth, async function (req, res, _next) {
         results.push({
           "type": "contact",
           "account_id": account.id,
+          "url": `https://genezio-crm.app.genez.io/accounts/${account.id}`,
           "account_name": account.name,
           "contact_id": contact.id,
           "contact_name": contact.name,
@@ -1501,6 +1503,7 @@ app.get("/find", checkAuth, async function (req, res, _next) {
         results.push({
           "type": "team_member",
           "account_id": account.id,
+          "url": `https://genezio-crm.app.genez.io/accounts/${account.id}`,
           "account_name": account.name,
           "team_member_id": teamMember.id,
           "team_member_name": teamMember.name,
@@ -1514,6 +1517,7 @@ app.get("/find", checkAuth, async function (req, res, _next) {
         results.push({
           "type": "interaction",
           "account_id": account.id,
+          "url": `https://genezio-crm.app.genez.io/accounts/${account.id}`,
           "account_name": account.name,
           "interaction_id": interaction.id,
           "interaction_title": interaction.title,
@@ -1525,6 +1529,7 @@ app.get("/find", checkAuth, async function (req, res, _next) {
         results.push({
           "type": "action_item",
           "account_id": account.id,
+          "url": `https://genezio-crm.app.genez.io/accounts/${account.id}`,
           "account_name": account.name,
           "action_item_id": actionItem.id,
           "action_item_title": actionItem.title,
