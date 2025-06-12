@@ -7,6 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import mongooseToSwagger from 'mongoose-to-swagger';
 import SmartAgent from './agent/SmartAgent.mjs';
 import emailAuth from './emailCodeAuth.mjs';
+import { sendNotification } from "./notifications.mjs";
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -326,6 +327,7 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
       id: req.userInfo.userId,
       name: req.userInfo.name,
       email: req.userInfo.email,
+      phone: req.userInfo.phone,
     },
     metrics: req.body.metrics,
   };
@@ -418,7 +420,12 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res, _next) {
   account.status = req.body.status;
   account.metrics = req.body.metrics;
   account.accountType = req.body.accountType;
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${account.name}.`);
+  
   await account.save();
+
   res.send(account);
 });
 
@@ -449,6 +456,10 @@ app.delete("/accounts/:account_id", checkAuth, async function (req, res, _next) 
   if (!account) {
     return res.status(404).send({ message: "Account not found" });
   }
+
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `Account ${account.name} has been deleted by ${req.userInfo.name}.`);
+
   const response = await Accounts.deleteOne({ id: accountId });
   res.status(204).send();
 });
@@ -521,6 +532,10 @@ app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, re
   if (ownerIndex !== -1) {
     account.teamMembers.splice(ownerIndex, 1);
   }
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} added ${newMember.name} to ${account.name}.`);
+  
   await account.save();
 
   res.status(201).send(newMember);
@@ -573,13 +588,20 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
     typeof m.toObject === "function" ? m.toObject() : m
   );
 
+  const teamMemberName = account.teamMembers.find((member) => member.id == memberId)?.name;
+
   const memberIndex = account.teamMembers.findIndex((member) => { return member.id == memberId});
   if (memberIndex === -1) {
     return res.status(404).send({ message: "Member not found" });
   }
 
   account.teamMembers.splice(memberIndex, 1);
+
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} removed ${teamMemberName} from ${account.name}.`);
+  
   await account.save();
+
   res.status(204).send();
 });
 
@@ -637,7 +659,12 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
   delete newOwner.userId;
 
   account.owner = newOwner;
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} assigned ${account.name} to ${newOwner.name}.`);
+  
   await account.save();
+
   res.status(204).send();
 });
 
@@ -708,7 +735,12 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, 
   };
 
   account.employees.push(newContact);
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} added ${newContact.name} to ${account.name}.`);
+
   await account.save();
+
   res.status(201).send(newContact);
 });
 
@@ -785,7 +817,12 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
   contact.email = req.body.email;
   contact.phone = req.body.phone;
   contact.notes = req.body.notes;
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${contact.name}'s details on ${account.name}.`);
+  
   await account.save();
+
   res.send(contact);
 });
 
@@ -832,13 +869,20 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
     typeof m.toObject === "function" ? m.toObject() : m
   );
 
+  const contactName = account.employees.find((contact) => contact.id === contactId)?.name;
+
   const contactIndex = account.employees.findIndex((contact) => contact.id === contactId);
   if (contactIndex === -1) {
     return res.status(404).send({ message: "Contact not found" });
   }
 
   account.employees.splice(contactIndex, 1);
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} removed ${contactName} from ${account.name}.`);
+  
   await account.save();
+
   res.status(204).send();
 });
 
@@ -909,17 +953,12 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
   };
 
   account.interactions.push(newInteraction);
-  // if (req.body.actionItems) {
-  //   for (const actionIntem of req.body.actionItems) {
-  //     const newActionItem = {
-  //       id: crypto.randomUUID(),
-  //       title: actionIntem.title,
-  //       dueDate: actionIntem.dueDate,
-  //     };
-  //     account.actionItems.push(newActionItem);
-  //   }
-  // }
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} added a new ${newInteraction.type} (${newInteraction.title}) to ${account.name}.`);
+  
   await account.save();
+
   res.status(201).send(newInteraction);
 });
 
@@ -990,7 +1029,11 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
     email: req.userInfo.email,
   };
 
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} updated a ${interaction.type} (${interaction.title}) on ${account.name}.`);
+  
   await account.save();
+
   res.send(interaction);
 });
 
@@ -1037,13 +1080,20 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
     typeof m.toObject === "function" ? m.toObject() : m
   );
 
+  const interactionTitle = account.interactions.find((interaction) => interaction.id === interactionId)?.title;
+
   const interactionIndex = account.interactions.findIndex((interaction) => interaction.id === interactionId);
   if (interactionIndex === -1) {
     return res.status(404).send({ message: "Interaction not found" });
   }
 
   account.interactions.splice(interactionIndex, 1);
+  
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} removed ${interactionTitle} from ${account.name}.`);
+  
   await account.save();
+
   res.status(204).send();
 });
 
@@ -1133,7 +1183,11 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
 
   account.actionItems.push(actionItem);
 
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} added a new action item (${actionItem.title}) to ${account.name}.`);
+  
   await account.save();
+
   res.send(actionItem);
 });
 
@@ -1217,7 +1271,11 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
     actionItem.assignedTo = assignedUser;
   }
 
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} updated an action item (${actionItem.title}) on ${account.name}.`);
+  
   await account.save();
+
   res.send(actionItem);
 });
 
@@ -1271,7 +1329,11 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth,
   actionItem.completed = true;
   actionItem.completedAt = new Date();
 
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} completed "${actionItem.title}" on ${account.name}.`);
+  
   await account.save();
+
   res.send(actionItem);
 });
 
@@ -1324,7 +1386,11 @@ app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth,
 
   interaction.isSticky = false;
 
+  if (account.owner.id !== req.userInfo.userId)
+    await sendNotification(account.owner.phone, `${req.userInfo.name} unstick'd "${interaction.title}" on ${account.name}.`);
+  
   await account.save();
+
   res.send(interaction);
 });
 

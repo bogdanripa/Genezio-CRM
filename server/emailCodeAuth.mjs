@@ -1,5 +1,5 @@
 import express from "express";
-import { Users, ActiveSessions } from "./db.mjs";
+import { Users, ActiveSessions, Accounts } from "./db.mjs";
 import { MailService } from "@genezio/email-service";
 import crypto from "crypto"
 
@@ -107,6 +107,11 @@ router.post("/authenticate", async function (req, res, _next) {
         user.emailCode = null;
         user.phone = phone;
         await user.save();
+        const userAccounts = await Accounts.find({"owner.id": user.userId});
+        for (const account of userAccounts) {
+            account.owner.phone = phone;
+            await account.save();
+        }
     }
     
     res.status(responseCode).send({
