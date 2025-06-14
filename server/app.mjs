@@ -935,6 +935,11 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     return res.status(400).send({ message: "Interaction type is required" });
   }
 
+  const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
+  if (!validTypes.includes(req.body.type)) {
+    return res.status(400).send({ message: `Interaction type must be one of ${validTypes.join(', ')}` });
+  }
+
   const newInteraction = {
     id: crypto.randomUUID(),
     type: req.body.type,
@@ -952,11 +957,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     isSticky: req.body.isSticky,
   };
 
-  console.log(newInteraction);
-
   account.interactions.push(newInteraction);
-
-  console.log(account.interactions);
   
   if (account.owner.id !== req.userInfo.userId)
     await sendNotification(account.owner.phone, `${req.userInfo.name} added a new ${newInteraction.type} (${newInteraction.title}) to ${account.name}.`);
