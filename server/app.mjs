@@ -661,7 +661,7 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
   account.owner = newOwner;
   
   if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} assigned ${account.name} to ${newOwner.name}.`);
+    await sendNotification(account.owner.phone, `${req.userInfo.name} assigned you the ${account.name} account.`);
   
   await account.save();
 
@@ -1184,6 +1184,9 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
     assignedUser.id = assignedUser.userId;
     delete assignedUser.userId;
     actionItem.assignedTo = assignedUser;
+
+    if (assignedUser.id !== req.userInfo.userId && assignedUser.phone)
+      await sendNotification(assignedUser.phone, `${req.userInfo.name} assigned you "${actionItem.title}" on ${account.name}.`);
   }
 
   account.actionItems.push(actionItem);
@@ -1273,7 +1276,11 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
     }
     assignedUser.id = assignedUser.userId;
     delete assignedUser.userId;
-    actionItem.assignedTo = assignedUser;
+    if (assignedUser.id !== actionItem.assignedTo?.id) {
+      actionItem.assignedTo = assignedUser;
+      if (assignedUser.id !== req.userInfo.userId && assignedUser.phone)
+        await sendNotification(assignedUser.phone, `${req.userInfo.name} assigned you "${actionItem.title}" on ${account.name}.`);
+    }
   }
 
   if (account.owner.id !== req.userInfo.userId)
