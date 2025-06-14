@@ -54,7 +54,7 @@ router.post("/init", async function (req, res, _next) {
     }
     const user = await Users.findOne({ email: email });
     if (!user) {
-        return res.status(404).send({ message: "User not found" });
+        return res.status(404).send({ message: "Could not identify you by email. You need to create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate." });
     }
 
     // generate a 16 digits code
@@ -93,7 +93,7 @@ router.post("/authenticate", async function (req, res, _next) {
     
     const user = await Users.findOne({ email: email });
     if (!user) {
-        return res.status(404).send({ message: "User not found" });
+        return res.status(404).send({ message: "User's email was not found. They can create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate." });
     }
     
     if (user.emailCode !== code) {
