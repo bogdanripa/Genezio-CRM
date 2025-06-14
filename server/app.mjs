@@ -952,7 +952,11 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     isSticky: req.body.isSticky,
   };
 
+  console.log(newInteraction);
+
   account.interactions.push(newInteraction);
+
+  console.log(account.interactions);
   
   if (account.owner.id !== req.userInfo.userId)
     await sendNotification(account.owner.phone, `${req.userInfo.name} added a new ${newInteraction.type} (${newInteraction.title}) to ${account.name}.`);
