@@ -889,6 +889,27 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
   res.status(204).send();
 });
 
+function fixTeamMember(teamMember, account) {
+  if (!teamMember) return null;
+  if (teamMember.id && teamMember.name && teamMember.email) return teamMember;
+  let user = null;
+  const teamMembers = account.teamMembers || [];
+  if (teamMember.id)
+    user = teamMembers.find((member) => member.id === teamMember.id);
+  if (!user && teamMember.email)
+    user = teamMembers.find((member) => member.email === teamMember.email);
+  if (!user && teamMember.name)
+    user = teamMembers.find((member) => member.name.toLowerCase() === teamMember.name.toLowerCase());
+  if (user)
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    };
+  console.error(`Could not find team member ${JSON.stringify(teamMember)} in ${account.name}`);
+  return null;
+}
+
 function fixAttendees(attendees, account) {
   if (!attendees || !Array.isArray(attendees)) {
     return [];
@@ -925,7 +946,8 @@ function fixAttendees(attendees, account) {
         name: contact.name,
         email: contact.email
       };
-
+    
+    console.error(`Could not find attendee ${JSON.stringify(attendee)} in ${account.name}`);
     return attendee;
   })
 }
@@ -1236,17 +1258,22 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
   };
 
   if (req.body.assignedTo) {
+    const assignedTo = fixTeamMember(req.body.assignedTo, account);
+    actionItem.assignedTo = assignedTo;
+
+    if (!assignedTo) {
+      return res.status(404).send({ message: "Assigned user not found" });
+    }
+
     const assignedUser = await Users.findOne({
-      userId: req.body.assignedTo.id
+      userId: assignedTo.id
     }).lean();
+
     if (!assignedUser) {
       return res.status(404).send({ message: "Assigned user not found" });
     }
-    assignedUser.id = assignedUser.userId;
-    delete assignedUser.userId;
-    actionItem.assignedTo = assignedUser;
 
-    if (assignedUser.id !== req.userInfo.userId && assignedUser.phone)
+    if (assignedUser.userId !== req.userInfo.userId && assignedUser.phone)
       await sendNotification(assignedUser.phone, `${req.userInfo.name} assigned you "${actionItem.title}" on ${account.name}.`);
   }
 
@@ -1329,19 +1356,23 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
   actionItem.title = req.body.title;
   actionItem.dueDate = req.body.dueDate;
   if (req.body.assignedTo) {
-    const assignedUser = await Users.findOne({
-      userId: req.body.assignedTo.id
-    }).lean();
-    if (!assignedUser) {
+    const assignedTo = fixTeamMember(req.body.assignedTo, account);
+    if (!assignedTo) {
       return res.status(404).send({ message: "Assigned user not found" });
     }
-    assignedUser.id = assignedUser.userId;
-    delete assignedUser.userId;
-    if (assignedUser.id !== actionItem.assignedTo?.id) {
-      actionItem.assignedTo = assignedUser;
-      if (assignedUser.id !== req.userInfo.userId && assignedUser.phone)
+
+    if (assignedTo.id !== actionItem.assignedTo?.id) {
+      const assignedUser = await Users.findOne({
+        userId: assignedTo.id
+      }).lean();
+  
+      if (!assignedUser) {
+        return res.status(404).send({ message: "Assigned user not found" });
+      }
+      if (assignedTo.id !== req.userInfo.userId && assignedUser.phone)
         await sendNotification(assignedUser.phone, `${req.userInfo.name} assigned you "${actionItem.title}" on ${account.name}.`);
     }
+    actionItem.assignedTo = assignedTo;
   }
 
   if (account.owner.id !== req.userInfo.userId)
