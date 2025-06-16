@@ -890,6 +890,9 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
 });
 
 function fixAttendees(attendees, account) {
+  if (!attendees || !Array.isArray(attendees)) {
+    return [];
+  }
   return attendees.map((attendee) => {
     if (attendee.id && attendee.name && attendee.email) return attendee;
     let user = null;
