@@ -117,7 +117,9 @@ async function checkAuth(req, res, next) {
 
 async function getAllAccounts(req) {
   const address = req.userInfo.address;
-  return Accounts.find({ "domain": address}).lean();
+  return Accounts.find({ domain: address })
+    .sort({ "account.name": 1 })
+    .lean();
 }
 
 async function getAccount(req, accountId) {
