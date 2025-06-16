@@ -118,7 +118,8 @@ async function checkAuth(req, res, next) {
 async function getAllAccounts(req) {
   const address = req.userInfo.address;
   return Accounts.find({ domain: address })
-    .sort({ "account.name": 1 })
+    .sort({ "name": 1 })
+    .collation({ locale: 'en', strength: 1 })  // case-insensitive
     .lean();
 }
 
