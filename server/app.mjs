@@ -886,6 +886,44 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
   res.status(204).send();
 });
 
+function fixAttendees(attendees, account) {
+  return attendees.map((attendee) => {
+    if (attendee.id && attendee.name && attendee.email) return attendee;
+    let user = null;
+    const teamMembers = account.teamMembers || [];
+    if (attendee.id)
+      user = teamMembers.find((member) => member.id === attendee.id);
+    if (!user && attendee.email)
+      user = teamMembers.find((member) => member.email === attendee.email);
+    if (!user && attendee.name)
+      user = teamMembers.find((member) => member.name.toLowerCase() === attendee.name.toLowerCase());
+    if (user)
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+      };
+
+    let contact = null;
+    const employees = account.employees || [];
+    if (attendee.id)
+      contact = employees.find((employee) => employee.id === attendee.id);
+    if (!contact && attendee.email)
+      contact = employees.find((employee) => employee.email === attendee.email);
+    if (!contact && attendee.name)
+      contact = employees.find((employee) => employee.name.toLowerCase() === attendee.name.toLowerCase());
+    if (contact)
+      return {
+        id: contact.id,
+        name: contact.name,
+        email: contact.email
+      };
+
+    return attendee;
+  })
+}
+
 /**
  * @openapi
  * /accounts/{account_id}/interactions:
@@ -935,14 +973,18 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     return res.status(400).send({ message: "Interaction type is required" });
   }
 
+  const interactionType = req.body.type.toLowerCase();
+
   const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
-  if (!validTypes.includes(req.body.type)) {
+  if (!validTypes.includes(interactionType)) {
     return res.status(400).send({ message: `Interaction type must be one of ${validTypes.join(', ')}` });
   }
 
+  const attendees = fixAttendees(req.body.attendees, account);
+
   const newInteraction = {
     id: crypto.randomUUID(),
-    type: req.body.type,
+    type: interactionType,
     timestamp: req.body.timestamp,
     createdAt: new Date(),
     createdBy: {
@@ -952,7 +994,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     },
     title: req.body.title,
     description: req.body.description,
-    attendees: req.body.attendees,
+    attendees,
     metadata: req.body.metadata,
     isSticky: req.body.isSticky,
   };
@@ -1020,13 +1062,26 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
     return res.status(404).send({ message: "Interaction not found" });
   }
 
-  interaction.type = req.body.type;
+  if (!req.body.type) {
+    return res.status(400).send({ message: "Interaction type is required" });
+  }
+
+  const interactionType = req.body.type.toLowerCase();
+
+  const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
+  if (!validTypes.includes(interactionType)) {
+    return res.status(400).send({ message: `Interaction type must be one of ${validTypes.join(', ')}` });
+  }
+
+  const attendees = fixAttendees(req.body.attendees, account);
+
+  interaction.type = interactionType;
   interaction.timestamp = req.body.timestamp;
   interaction.title = req.body.title;
   interaction.description = req.body.description;
   interaction.metadata = req.body.metadata;
   interaction.isSticky = req.body.isSticky;
-  interaction.attendees = req.body.attendees;
+  interaction.attendees = attendees;
   interaction.updatedAt = new Date();
   interaction.updatedBy = {
     id: req.userInfo.userId,
