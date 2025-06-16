@@ -1,4 +1,6 @@
 async function sendNotification(phone, message) {
+  if (!phone) return;
+
   // This function would contain the logic to send a notification to the user
   await fetch(process.env.NOTIFICATION_URL, {
     method: 'POST',
