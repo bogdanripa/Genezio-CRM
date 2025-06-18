@@ -914,7 +914,8 @@ function fixAttendees(attendees, account) {
   if (!attendees || !Array.isArray(attendees)) {
     return [];
   }
-  return attendees.map((attendee) => {
+  const errors = [];
+  const attendeesList = attendees.map((attendee) => {
     if (attendee.id && attendee.name && attendee.email) return attendee;
     let user = null;
     const teamMembers = account.teamMembers || [];
@@ -948,8 +949,14 @@ function fixAttendees(attendees, account) {
       };
     
     console.error(`Could not find attendee ${JSON.stringify(attendee)} in ${account.name}`);
-    return attendee;
-  })
+    errors.push(attendee.name || attendee.email || attendee.id || "Unknown attendee");
+    return null;
+  });
+  if (errors.length > 0) {
+    return `Cound not find attendees: ${errors.join(', ')}`;
+  }
+  // Filter out null attendees
+  return attendeesList;
 }
 
 /**
@@ -1008,7 +1015,22 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     return res.status(400).send({ message: `Interaction type must be one of ${validTypes.join(', ')}` });
   }
 
-  const attendees = fixAttendees(req.body.attendees, account);
+  let attendees = fixAttendees(req.body.attendees, account);
+  if (typeof attendees === 'string') {
+    // get a list of account team members and contacts
+    let attendeesList = [];
+    if (account.teamMembers && account.teamMembers.length > 0) {
+      attendeesList = account.teamMembers.map((member) => member.name);
+    }
+    if (account.employees && account.employees.length > 0) {
+      attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
+    }
+    if (attendeesList.length === 0) {
+      attendeesList = ["no team members or contacts found"];
+    }
+
+    return res.status(400).send({ message: `${attendees}. Available attendees are: ${attendeesList.join(', ')}` });
+  }
 
   const newInteraction = {
     id: crypto.randomUUID(),
@@ -1101,8 +1123,23 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
     return res.status(400).send({ message: `Interaction type must be one of ${validTypes.join(', ')}` });
   }
 
-  const attendees = fixAttendees(req.body.attendees, account);
+  let attendees = fixAttendees(req.body.attendees, account);
+  if (typeof attendees === 'string') {
+    // get a list of account team members and contacts
+    let attendeesList = [];
+    if (account.teamMembers && account.teamMembers.length > 0) {
+      attendeesList = account.teamMembers.map((member) => member.name);
+    }
+    if (account.employees && account.employees.length > 0) {
+      attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
+    }
+    if (attendeesList.length === 0) {
+      attendeesList = ["no team members or contacts found"];
+    }
 
+    return res.status(400).send({ message: `${attendees}. Available attendees are: ${attendeesList.join(', ')}` });
+  }
+  
   interaction.type = interactionType;
   interaction.timestamp = req.body.timestamp;
   interaction.title = req.body.title;
@@ -1262,7 +1299,9 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
     actionItem.assignedTo = assignedTo;
 
     if (!assignedTo) {
-      return res.status(404).send({ message: "Assigned user not found" });
+      // get a list of team members
+      const teamMembers = (account.teamMembers || []).map((m) => m.name).join(", ");
+      return res.status(404).send({ message: `Assigned user not found. Account team members are: ${teamMembers}` });
     }
 
     const assignedUser = await Users.findOne({
@@ -1358,7 +1397,8 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
   if (req.body.assignedTo) {
     const assignedTo = fixTeamMember(req.body.assignedTo, account);
     if (!assignedTo) {
-      return res.status(404).send({ message: "Assigned user not found" });
+      const teamMembers = (account.teamMembers || []).map((m) => m.name).join(", ");
+      return res.status(404).send({ message: `Assigned user not found. Account team members are: ${teamMembers}` });
     }
 
     if (assignedTo.id !== actionItem.assignedTo?.id) {
