@@ -207,7 +207,9 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
       numberOfTeamMembers: account.teamMembers.length,
       numberOfContacts: account.employees.length,
       numberOfInteractions: account.interactions.length,
-      lastInteractionDate: account.interactions.length > 0 ? account.interactions[0].timestamp : null,
+      lastInteractionDate: account.interactions.length > 0 
+        ? account.interactions[account.interactions.length - 1].timestamp 
+        : null,
       updatedAt: account.updatedAt || account.createdAt,
       metrics: account.metrics,
     };
