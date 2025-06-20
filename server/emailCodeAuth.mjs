@@ -1,7 +1,6 @@
 import express from "express";
 import { Users, ActiveSessions, Accounts } from "./db.mjs";
 import { MailService } from "@genezio/email-service";
-import crypto from "crypto"
 
 const router = express.Router();
 
@@ -18,6 +17,7 @@ async function getToken(userId) {
     return [200, "Authenticated", authSession.token];
 }
 
+/*
 router.post("/get-token", async function (req, res, _next) {
     const secret = req.body.secret;
     const phone = req.body.phone;
@@ -38,10 +38,11 @@ router.post("/get-token", async function (req, res, _next) {
         token,
     });
 });
+*/
 
-function generate16DigitCode() {
+function generate8DigitCode() {
   let code = '';
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 8; i++) {
     code += Math.floor(Math.random() * 10);
   }
   return code;
@@ -50,15 +51,15 @@ function generate16DigitCode() {
 router.post("/init", async function (req, res, _next) {
     const email = req.body.email;
     if (!email) {
-        return res.status(400).send({ message: "Email is required" });
+        return res.status(400).send("Email is required");
     }
     const user = await Users.findOne({ email: email });
     if (!user) {
-        return res.status(404).send({ message: "Could not identify you by email. You need to create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate." });
+        return res.status(404).send("Could not identify you by email. You need to create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate.");
     }
 
-    // generate a 16 digits code
-    const code = generate16DigitCode();
+    // generate a 8 digits code
+    const code = generate8DigitCode();
 
     const response = await MailService.sendMail({
         emailServiceToken: process.env.EMAIL_SERVICE_TOKEN,
@@ -68,18 +69,14 @@ router.post("/init", async function (req, res, _next) {
     });
 
     if (!response.success) {
-        res.status(500).send({
-            message: "Failed to send email. Please try again later.",
-        });
+        res.status(500).send("Failed to send email. Please try again later.");
         return;
     }
 
     user.emailCode = code;
     await user.save();
 
-    res.status(200).send({
-        message: "An email was sent with the code to authenticate. Please share it back with me.",
-    });
+    res.status(200).send("An email was sent with the code to authenticate. Please share it back with me.");
 });
 
 router.post("/authenticate", async function (req, res, _next) {
@@ -88,16 +85,16 @@ router.post("/authenticate", async function (req, res, _next) {
     const code = req.body.code;
     
     if (!email || !code || !phone) {
-        return res.status(400).send({ message: "Email, code and phone are required" });
+        return res.status(400).send("Email, code and phone are required");
     }
     
     const user = await Users.findOne({ email: email });
     if (!user) {
-        return res.status(404).send({ message: "User's email was not found. They can create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate." });
+        return res.status(404).send("User's email was not found. They can create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate.");
     }
     
     if (user.emailCode !== code) {
-        return res.status(401).send({ message: "Invalid authentication code" });
+        return res.status(401).send("Invalid authentication code");
     }
 
 
@@ -112,12 +109,14 @@ router.post("/authenticate", async function (req, res, _next) {
             account.owner.phone = phone;
             await account.save();
         }
+        
+        res.status(200).send({
+            token,
+            name: user.name
+        });
+    } else {
+        res.status(responseCode).send(message);
     }
-    
-    res.status(responseCode).send({
-        message,
-        token,
-    });
 });
 
 // Export the router
