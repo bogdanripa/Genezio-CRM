@@ -1,13 +1,13 @@
 import express from "express";
 import { AuthService } from "@genezio/auth";
 import cors from "cors";
-import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem, ActiveSessions } from "./db.mjs";
+import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem } from "./db.mjs";
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import mongooseToSwagger from 'mongoose-to-swagger';
-import SmartAgent from './agent/SmartAgent.mjs';
 import emailAuth from './emailCodeAuth.mjs';
 import { sendNotification } from "./notifications.mjs";
+import {processAllAccounts} from "./cron.mjs";
 
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -1715,17 +1715,34 @@ app.get("/find", checkAuth, async function (req, res, _next) {
   res.status(200).send(deduplicated);
 });
 
-app.get('/agent/test', async (req, res) => {
-  console.log("Testing SmartAgent...");
-  const smartAgent = new SmartAgent();
-  const response = "1";//await smartAgent.invoke("Who is on the BCR account?");
-  console.log(response);
-  res.send(response);
-});
-
 app.get('/docs/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
+});
+
+app.get('/cron', async (req, res) => {
+  console.log("Running cron job...");
+  // Here you can call your cron functions
+  const accounts = await Accounts.find({}).lean();
+  const users = await Users.find().lean();
+  const userMessages = await processAllAccounts(users, accounts);
+  const promises = [];
+  for (const userId in userMessages) {
+    const { phone, email, messages } = userMessages[userId];
+    if (messages.length === 0) continue;
+    if (!phone) {
+      console.warn(`No phone number found for user ${userId}.`);
+      continue;
+    }
+    console.log(`Working on user ${userId} (phone: ${phone}):`);
+    promises.push(
+      sendNotification(phone, messages.join('\n'))
+        .then(() => console.log(`Sent ${messages.length} messages to ${phone}`))
+        .catch((err) => console.error(`Failed to send messages to ${phone}:`, err))
+    );
+  }
+  await Promise.all(promises);
+  res.send("Cron job executed successfully");
 });
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

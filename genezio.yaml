@@ -1,9 +1,9 @@
 backend:
     functions:
-        - entry: app.mjs
-          handler: handler
-          name: express-auth-starter
+        - name: express-auth-starter
           path: ./
+          entry: app.mjs
+          handler: handler
           type: httpServer
     language:
         name: js
@@ -32,4 +32,8 @@ services:
         - name: genezio-crm
           region: eu-central-1
           type: mongo-atlas
+    # crons:
+    #     - name: my-cron
+    #       function: ${{backend.functions.cron.name}}
+    #       schedule: "0 7 * * *"  # Runs daily at 7:00 AM UTC
 yamlVersion: 2
