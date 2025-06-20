@@ -1,6 +1,6 @@
 backend:
     functions:
-        - name: express-auth-starter
+        - name: crm-backend
           path: ./
           entry: app.mjs
           handler: handler
@@ -14,7 +14,7 @@ backend:
         local: npm install
 frontend:
     environment:
-        VITE_API_URL: ${{ backend.functions.express-auth-starter.url }}
+        VITE_API_URL: ${{ backend.functions.crm-backend.url }}
     name: express-auth-client
     path: ./client
     publish: ./dist
@@ -32,8 +32,9 @@ services:
         - name: genezio-crm
           region: eu-central-1
           type: mongo-atlas
-    # crons:
-    #     - name: my-cron
-    #       function: ${{backend.functions.cron.name}}
-    #       schedule: "0 7 * * *"  # Runs daily at 7:00 AM UTC
+    crons:
+        - name: my-cron
+          function: ${{backend.functions.crm-backend.name}}
+          schedule: "0 7 * * *"
+          endpoint: "/cron"
 yamlVersion: 2
