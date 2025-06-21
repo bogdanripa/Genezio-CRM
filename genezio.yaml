@@ -36,5 +36,5 @@ services:
         - name: my-cron
           function: ${{backend.functions.crm-backend.name}}
           schedule: "0 7 * * *"
-          endpoint: "/cron"
+          endpoint: "cron"
 yamlVersion: 2
