@@ -109,9 +109,7 @@ async function checkAuth(req, res, next) {
     req.userInfo = userInfo;
     next();
   } catch (error) {
-    res.status(401).send({
-      message: "Unauthorized",
-    });
+    res.status(401).send("Unauthorized");
   }
 }
 
@@ -246,7 +244,9 @@ app.get("/accounts/:account_id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
   if (account.interactions && account.interactions.length)
     account.interactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -415,7 +415,9 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res, _next) {
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   account.name = req.body.name;
@@ -459,7 +461,9 @@ app.delete("/accounts/:account_id", checkAuth, async function (req, res, _next) 
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   if (account.owner.id !== req.userInfo.userId)
@@ -513,14 +517,17 @@ app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, re
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   const newMember = await Users.findOne({
     userId: req.body.id
   }).lean();
   if (!newMember) {
-    return res.status(404).send({ message: "User not found" });
+    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+    return res.status(404).send(`User not found. Account team members are: ${teamMembers}`);
   }
   newMember.id = newMember.userId;
   delete newMember.userId;
@@ -581,7 +588,9 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
   let memberId = req.params.team_member_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   if (memberId == 'undefined') {
@@ -597,7 +606,8 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
 
   const memberIndex = account.teamMembers.findIndex((member) => { return member.id == memberId});
   if (memberIndex === -1) {
-    return res.status(404).send({ message: "Member not found" });
+    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+    return res.status(404).send(`Team member not found. Account team members are: ${teamMembers}`);
   }
 
   account.teamMembers.splice(memberIndex, 1);
@@ -650,14 +660,17 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
   const newOwner = await Users.findOne({
     userId: req.body.id
   }).lean();
 
   if (!newOwner) {
-    return res.status(404).send({ message: "User not found" });
+    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+    return res.status(404).send(`User not found. Account team members are: ${teamMembers}`);
   }
 
   newOwner.id = newOwner.userId;
@@ -726,7 +739,9 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, 
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   const newContact = {
@@ -809,12 +824,15 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
   const contactId = req.params.contact_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   const contact = account.employees.find((contact) => contact.id === contactId);
   if (!contact) {
-    return res.status(404).send({ message: "Contact not found" });
+    const contacts = (account.employees || []).map((m) => `${m.name} (contact id: ${m.id})`).join(", ");
+    return res.status(404).send(`Contact not found. Account contacts are: ${contacts}`);
   }
 
   contact.name = req.body.name;
@@ -866,7 +884,9 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
   const contactId = req.params.contact_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   // Flatten employees
@@ -878,7 +898,8 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
 
   const contactIndex = account.employees.findIndex((contact) => contact.id === contactId);
   if (contactIndex === -1) {
-    return res.status(404).send({ message: "Contact not found" });
+    const contacts = (account.employees || []).map((m) => `${m.name} (contact id: ${m.id})`).join(", ");
+    return res.status(404).send(`Contact not found. Account contacts are: ${contacts}`);
   }
 
   account.employees.splice(contactIndex, 1);
@@ -999,22 +1020,24 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   if (!req.body.title) {
-    return res.status(400).send({ message: "Interaction title is required" });
+    return res.status(400).send("Interaction title is required");
   }
 
   if (!req.body.type) {
-    return res.status(400).send({ message: "Interaction type is required" });
+    return res.status(400).send("Interaction type is required");
   }
 
   const interactionType = req.body.type.toLowerCase();
 
   const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
   if (!validTypes.includes(interactionType)) {
-    return res.status(400).send({ message: `Interaction type must be one of ${validTypes.join(', ')}` });
+    return res.status(400).send(`Interaction type must be one of ${validTypes.join(', ')}`);
   }
 
   let attendees = fixAttendees(req.body.attendees, account);
@@ -1031,7 +1054,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
       attendeesList = ["no team members or contacts found"];
     }
 
-    return res.status(400).send({ message: `${attendees}. Available attendees are: ${attendeesList.join(', ')}` });
+    return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
   }
 
   const newInteraction = {
@@ -1106,23 +1129,29 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
   const interactionId = req.params.interaction_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
   if (!interaction) {
-    return res.status(404).send({ message: "Interaction not found" });
+    let interactions = "No interactions on this account.";
+    if (account.interactions && account.interactions.length > 0) {
+      interactions = account.interactions.map((interaction) => `${interaction.title} (interaction id: ${interaction.id})`).join(", ");
+    }
+    return res.status(404).send(`Interaction not found. Available interactions: ${interactions}`);
   }
 
   if (!req.body.type) {
-    return res.status(400).send({ message: "Interaction type is required" });
+    return res.status(400).send("Interaction type is required");
   }
 
   const interactionType = req.body.type.toLowerCase();
 
   const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
   if (!validTypes.includes(interactionType)) {
-    return res.status(400).send({ message: `Interaction type must be one of ${validTypes.join(', ')}` });
+    return res.status(400).send(`Interaction type must be one of ${validTypes.join(', ')}`);
   }
 
   let attendees = fixAttendees(req.body.attendees, account);
@@ -1139,7 +1168,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
       attendeesList = ["no team members or contacts found"];
     }
 
-    return res.status(400).send({ message: `${attendees}. Available attendees are: ${attendeesList.join(', ')}` });
+    return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
   }
   
   interaction.type = interactionType;
@@ -1199,7 +1228,9 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
   const interactionId = req.params.interaction_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   // Flatten interactions
@@ -1211,7 +1242,11 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
 
   const interactionIndex = account.interactions.findIndex((interaction) => interaction.id === interactionId);
   if (interactionIndex === -1) {
-    return res.status(404).send({ message: "Interaction not found" });
+    let interactions = "No interactions on this account.";
+    if (account.interactions && account.interactions.length > 0) {
+      interactions = account.interactions.map((interaction) => `${interaction.title} (interaction id: ${interaction.id})`).join(", ");
+    }
+    return res.status(404).send(`Interaction not found. Available interactions: ${interactions}`);
   }
 
   account.interactions.splice(interactionIndex, 1);
@@ -1271,13 +1306,6 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
  *               $ref: '#/components/schemas/ActionItem'
  *       404:
  *         description: Account or assigned user not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
  *       401:
  *         description: Unauthorized
  */
@@ -1285,7 +1313,9 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
   
   const actionItem = {
@@ -1302,8 +1332,8 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
 
     if (!assignedTo) {
       // get a list of team members
-      const teamMembers = (account.teamMembers || []).map((m) => m.name).join(", ");
-      return res.status(404).send({ message: `Assigned user not found. Account team members are: ${teamMembers}` });
+      const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+      return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
     }
 
     const assignedUser = await Users.findOne({
@@ -1311,7 +1341,8 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
     }).lean();
 
     if (!assignedUser) {
-      return res.status(404).send({ message: "Assigned user not found" });
+      const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+      return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
     }
 
     if (assignedUser.userId !== req.userInfo.userId && assignedUser.phone)
@@ -1386,12 +1417,18 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
   const actionItemId = req.params.action_item_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   const actionItem = account.actionItems.find((item) => item.id === actionItemId);
   if (!actionItem) {
-    return res.status(404).send({ message: "Action item not found" });
+    let actionItems = "No action items on this account.";
+    if (account.actionItems && account.actionItems.length > 0) {
+      actionItems = account.actionItems.map((item) => `${item.title} (action item id: ${item.id})`).join(", ");
+    }
+    return res.status(404).send(`Action item not found. Available action items: ${actionItems}`);
   }
 
   actionItem.title = req.body.title;
@@ -1399,8 +1436,8 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
   if (req.body.assignedTo) {
     const assignedTo = fixTeamMember(req.body.assignedTo, account);
     if (!assignedTo) {
-      const teamMembers = (account.teamMembers || []).map((m) => m.name).join(", ");
-      return res.status(404).send({ message: `Assigned user not found. Account team members are: ${teamMembers}` });
+      const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+      return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
     }
 
     if (assignedTo.id !== actionItem.assignedTo?.id) {
@@ -1409,7 +1446,8 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
       }).lean();
   
       if (!assignedUser) {
-        return res.status(404).send({ message: "Assigned user not found" });
+        const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+        return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
       }
       if (assignedTo.id !== req.userInfo.userId && assignedUser.phone)
         await sendNotification(assignedUser.phone, `${req.userInfo.name} assigned you "${actionItem.title}" on ${account.name}.`);
@@ -1464,12 +1502,18 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth,
   const actionItemId = req.params.action_item_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   const actionItem = account.actionItems.find((item) => item.id === actionItemId);
   if (!actionItem) {
-    return res.status(404).send({ message: "Action item not found" });
+    let actionItems = "No action items on this account.";
+    if (account.actionItems && account.actionItems.length > 0) {
+      actionItems = account.actionItems.map((item) => `${item.title} (action item id: ${item.id})`).join(", ");
+    }
+    return res.status(404).send(`Action item not found. Available action items: ${actionItems}`);
   }
 
   actionItem.completed = true;
@@ -1522,12 +1566,18 @@ app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth,
   const interactionId = req.params.interaction_id;
   const account = await getAccount(req, accountId);
   if (!account) {
-    return res.status(404).send({ message: "Account not found" });
+    const accounts = await getAllAccounts(req);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
   const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
   if (!interaction) {
-    return res.status(404).send({ message: "Interaction not found" });
+    let interactions = "No interactions on this account.";
+    if (account.interactions && account.interactions.length > 0) {
+      interactions = account.interactions.map((interaction) => `${interaction.title} (interaction id: ${interaction.id})`).join(", ");
+    }
+    return res.status(404).send(`Interaction not found. Available interactions: ${interactions}`);
   }
 
   interaction.isSticky = false;
@@ -1690,7 +1740,7 @@ function findOneTerm(term, accounts) {
 app.get("/find", checkAuth, async function (req, res, _next) {
   const query = req.query.name;
   if (!query) {
-    return res.status(400).send({ message: "Query parameter 'name' is required" });
+    return res.status(400).send("Query parameter 'name' is required");
   }
 
   const terms = query.trim().split(/\s+/);
