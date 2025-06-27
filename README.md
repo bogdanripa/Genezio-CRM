@@ -1,6 +1,6 @@
 # Basic CRM system
 
-Very basic CRM system using reac for the frontend and express / mongo in the backend.
+Very basic CRM system using react for the frontend and express / mongo in the backend.
 
 Capabilities:
 - each user can create multiple accounts they work with (potential customers)
