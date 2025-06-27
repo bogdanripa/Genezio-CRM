@@ -50,7 +50,6 @@ export default function LoginPage() {
         )}
       </div>
       <div className="mt-8 text-center text-sm text-muted-foreground">
-        <p>Demo credentials are automatically applied</p>
         <p className="mt-1">
           Users will only see accounts from their email domain
         </p>
