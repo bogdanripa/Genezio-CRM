@@ -10,3 +10,5 @@ Capabilities:
 - accounts have a timeline with interactions - emails, meetings, whatsapp messages and so on
 
 Deployed on https://app.genez.io/ at https://genezio-crm.app.genez.io/
+
+You can also interact with the CRM via a WhatsApp bot here: https://wa.me/40750266147
