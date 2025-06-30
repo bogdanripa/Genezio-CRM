@@ -305,8 +305,6 @@ app.get("/accounts/:account_id", checkAuth, async function (req, res, _next) {
  *             required:
  *               - name
  *               - industry
- *               - accountType
- *               - status
  *     responses:
  *       201:
  *         description: Account created successfully
@@ -326,7 +324,6 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
     website: req.body.website,
     description: req.body.description,
     industry: req.body.industry,
-    status: req.body.status,
     domain: req.userInfo.address,
     owner: {
       id: req.userInfo.userId,
@@ -336,6 +333,10 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
     },
     metrics: req.body.metrics,
   };
+
+  if (req.body.status) newAccount.status = req.body.status;
+  if (req.body.accountType) newAccount.accountType = req.body.accountType;
+
   const account = await Accounts.create(newAccount);
   res.status(201).send(account);
 });
@@ -344,7 +345,7 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
  * @openapi
  * /accounts/{account_id}:
  *   put:
- *     summary: Update an account by account_id. Call this only if you need to update an existing account.
+ *     summary: Update an account by account_id. Call this only if you need to update an existing account. None of the fields except for the account id are required.
  *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
@@ -394,11 +395,6 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
  *                     type: number
  *                   probability:
  *                     type: number
- *             required:
- *               - name
- *               - industry
- *               - accountType
- *               - status
  *     responses:
  *       201:
  *         description: Account created successfully
@@ -420,13 +416,13 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res, _next) {
     return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
-  account.name = req.body.name;
-  account.website = req.body.website;
-  account.description = req.body.description;
-  account.industry = req.body.industry;
-  account.status = req.body.status;
-  account.metrics = req.body.metrics;
-  account.accountType = req.body.accountType;
+  if (req.body.name) account.name = req.body.name;
+  if (req.body.website) account.website = req.body.website;
+  if (req.body.description) account.description = req.body.description;
+  if (req.body.industry) account.industry = req.body.industry;
+  if (req.body.status) account.status = req.body.status;
+  if (req.body.metrics) account.metrics = req.body.metrics;
+  if (req.body.accountType) account.accountType = req.body.accountType;
   
   if (account.owner.id !== req.userInfo.userId)
     await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${account.name}.`);
@@ -692,7 +688,7 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
  *   post:
  *     summary: Add a contact to an account
  *     tags: [Account Contacts]
- *     description: Adds a new contact (employee) to the specified account.
+ *     description: Adds a new contact (employee) to the specified account. Contact name and role are required fields.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -736,6 +732,10 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
  *         description: Unauthorized
  */
 app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, _next) {
+  if (!req.body.name || !req.body.role) {
+    return res.status(400).send("Name and role are required fields.");
+  }
+
   const accountId = req.params.account_id;
   const account = await getAccount(req, accountId);
   if (!account) {
@@ -751,7 +751,6 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, 
     email: req.body.email,
     phone: req.body.phone,
     notes: req.body.notes,
-    meetings: [],
   };
 
   account.employees.push(newContact);
@@ -770,7 +769,7 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, 
  *   put:
  *     summary: Update an existing contact
  *     tags: [Account Contacts]
- *     description: Updates the contact (employee) details associated with the specified account.
+ *     description: Updates the contact (employee) details associated with the specified account. The account and countact IDs are the only required fields.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -792,9 +791,6 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, 
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - name
- *               - role
  *             properties:
  *               name:
  *                 type: string
@@ -835,11 +831,11 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
     return res.status(404).send(`Contact not found. Account contacts are: ${contacts}`);
   }
 
-  contact.name = req.body.name;
-  contact.role = req.body.role;
-  contact.email = req.body.email;
-  contact.phone = req.body.phone;
-  contact.notes = req.body.notes;
+  if (req.body.name) contact.name = req.body.name;
+  if (req.body.role) contact.role = req.body.role;
+  if (req.body.email) contact.email = req.body.email;
+  if (req.body.phone) contact.phone = req.body.phone;
+  if (req.body.notes) contact.notes = req.body.notes;
   
   if (account.owner.id !== req.userInfo.userId)
     await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${contact.name}'s details on ${account.name}.`);
@@ -1025,11 +1021,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
-  if (!req.body.title) {
-    return res.status(400).send("Interaction title is required");
-  }
-
-  if (!req.body.type) {
+  if (!req.body.title || !req.body.type) {
     return res.status(400).send("Interaction type is required");
   }
 
@@ -1060,7 +1052,6 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
   const newInteraction = {
     id: crypto.randomUUID(),
     type: interactionType,
-    timestamp: req.body.timestamp,
     createdAt: new Date(),
     createdBy: {
       id: req.userInfo.userId,
@@ -1071,8 +1062,15 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     description: req.body.description,
     attendees,
     metadata: req.body.metadata,
-    isSticky: req.body.isSticky,
   };
+
+  if (req.body.timestamp) {
+    newInteraction.timestamp = req.body.timestamp;
+  }
+
+  if (req.body.isSticky) {
+    newInteraction.isSticky = req.body.isSticky;
+  }
 
   account.interactions.push(newInteraction);
   
@@ -1143,15 +1141,14 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
     return res.status(404).send(`Interaction not found. Available interactions: ${interactions}`);
   }
 
-  if (!req.body.type) {
-    return res.status(400).send("Interaction type is required");
-  }
+  let interactionType = req.body.type;
+  if (interactionType) {
+    interactionType = interactionType.toLowerCase();
 
-  const interactionType = req.body.type.toLowerCase();
-
-  const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
-  if (!validTypes.includes(interactionType)) {
-    return res.status(400).send(`Interaction type must be one of ${validTypes.join(', ')}`);
+    const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
+    if (!validTypes.includes(interactionType)) {
+      return res.status(400).send(`Interaction type must be one of ${validTypes.join(', ')}`);
+    }
   }
 
   let attendees = fixAttendees(req.body.attendees, account);
@@ -1171,12 +1168,12 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
     return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
   }
   
-  interaction.type = interactionType;
-  interaction.timestamp = req.body.timestamp;
-  interaction.title = req.body.title;
-  interaction.description = req.body.description;
-  interaction.metadata = req.body.metadata;
-  interaction.isSticky = req.body.isSticky;
+  if (interactionType) interaction.type = interactionType;
+  if (req.body.timestamp) interaction.timestamp = req.body.timestamp;
+  if (req.body.title) interaction.title = req.body.title;
+  if (req.body.description) interaction.description = req.body.description;
+  if (req.body.metadata) interaction.metadata = req.body.metadata;
+  if (req.body.isSticky) interaction.isSticky = req.body.isSticky;
   interaction.attendees = attendees;
   interaction.updatedAt = new Date();
   interaction.updatedBy = {
@@ -1265,7 +1262,7 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
  *   post:
  *     summary: Adds an action item
  *     tags: [Account Action Items]
- *     description: Adds an action item to an account.
+ *     description: Adds an action item to an account. Title and due date are required fields. Optionally, you can assign the action item to a team member.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1316,6 +1313,10 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
     const accounts = await getAllAccounts(req);
     const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
     return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+  }
+
+  if (!req.body.title || !req.body.dueDate) {
+    return res.status(400).send("Title and due date are required fields.");
   }
   
   const actionItem = {
@@ -1431,8 +1432,8 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
     return res.status(404).send(`Action item not found. Available action items: ${actionItems}`);
   }
 
-  actionItem.title = req.body.title;
-  actionItem.dueDate = req.body.dueDate;
+  if (req.body.title) actionItem.title = req.body.title;
+  if (req.body.dueDate) actionItem.dueDate = req.body.dueDate;
   if (req.body.assignedTo) {
     const assignedTo = fixTeamMember(req.body.assignedTo, account);
     if (!assignedTo) {

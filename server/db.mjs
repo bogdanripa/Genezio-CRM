@@ -81,13 +81,9 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: true,
     },
-    role: {
-      type: String,
-      required: true,
-    },
+    role: String,
     email: String,
     phone: String,
-    meetings: [String],
   }, {
     _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
@@ -133,16 +129,13 @@ const userSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['call', 'email', 'meeting', "whatsapp", 'note', 'status_change', 'sticky_note'],
-      required: true,
     },
     timestamp: {
       type: Date,
-      required: true,
       default: Date.now,
     },
     title: {
       type: String,
-      required: true,
     },
     description: String,
     attendees: [attendeeSchema],
@@ -199,7 +192,7 @@ const userSchema = new mongoose.Schema({
     website: String,
     status: {
       type: String,
-      default: 'prospect',
+      default: 'Prospect',
     },
     owner: userSummarySchema,
     teamMembers: {
