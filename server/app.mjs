@@ -334,8 +334,8 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
     metrics: req.body.metrics,
   };
 
-  if (req.body.status) newAccount.status = req.body.status;
-  if (req.body.accountType) newAccount.accountType = req.body.accountType;
+  if (req.body.status !== undefined) newAccount.status = req.body.status;
+  if (req.body.accountType !== undefined) newAccount.accountType = req.body.accountType;
 
   const account = await Accounts.create(newAccount);
   res.status(201).send(account);
@@ -416,13 +416,13 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res, _next) {
     return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
   }
 
-  if (req.body.name) account.name = req.body.name;
-  if (req.body.website) account.website = req.body.website;
-  if (req.body.description) account.description = req.body.description;
-  if (req.body.industry) account.industry = req.body.industry;
-  if (req.body.status) account.status = req.body.status;
-  if (req.body.metrics) account.metrics = req.body.metrics;
-  if (req.body.accountType) account.accountType = req.body.accountType;
+  if (req.body.name !== undefined) account.name = req.body.name;
+  if (req.body.website !== undefined) account.website = req.body.website;
+  if (req.body.description !== undefined) account.description = req.body.description;
+  if (req.body.industry !== undefined) account.industry = req.body.industry;
+  if (req.body.status !== undefined) account.status = req.body.status;
+  if (req.body.metrics !== undefined) account.metrics = req.body.metrics;
+  if (req.body.accountType !== undefined) account.accountType = req.body.accountType;
   
   if (account.owner.id !== req.userInfo.userId)
     await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${account.name}.`);
@@ -831,11 +831,11 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
     return res.status(404).send(`Contact not found. Account contacts are: ${contacts}`);
   }
 
-  if (req.body.name) contact.name = req.body.name;
-  if (req.body.role) contact.role = req.body.role;
-  if (req.body.email) contact.email = req.body.email;
-  if (req.body.phone) contact.phone = req.body.phone;
-  if (req.body.notes) contact.notes = req.body.notes;
+  if (req.body.name !== undefined) contact.name = req.body.name;
+  if (req.body.role !== undefined) contact.role = req.body.role;
+  if (req.body.email !== undefined) contact.email = req.body.email;
+  if (req.body.phone !== undefined) contact.phone = req.body.phone;
+  if (req.body.notes !== undefined) contact.notes = req.body.notes;
   
   if (account.owner.id !== req.userInfo.userId)
     await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${contact.name}'s details on ${account.name}.`);
@@ -1064,11 +1064,11 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     metadata: req.body.metadata,
   };
 
-  if (req.body.timestamp) {
+  if (req.body.timestamp !== undefined) {
     newInteraction.timestamp = req.body.timestamp;
   }
 
-  if (req.body.isSticky) {
+  if (req.body.isSticky !== undefined) {
     newInteraction.isSticky = req.body.isSticky;
   }
 
@@ -1142,7 +1142,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
   }
 
   let interactionType = req.body.type;
-  if (interactionType) {
+  if (interactionType !== undefined) {
     interactionType = interactionType.toLowerCase();
 
     const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
@@ -1168,12 +1168,12 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
     return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
   }
   
-  if (interactionType) interaction.type = interactionType;
-  if (req.body.timestamp) interaction.timestamp = req.body.timestamp;
-  if (req.body.title) interaction.title = req.body.title;
-  if (req.body.description) interaction.description = req.body.description;
-  if (req.body.metadata) interaction.metadata = req.body.metadata;
-  if (req.body.isSticky) interaction.isSticky = req.body.isSticky;
+  if (interactionType !== undefined) interaction.type = interactionType;
+  if (req.body.timestamp !== undefined) interaction.timestamp = req.body.timestamp;
+  if (req.body.title !== undefined) interaction.title = req.body.title;
+  if (req.body.description !== undefined) interaction.description = req.body.description;
+  if (req.body.metadata !== undefined) interaction.metadata = req.body.metadata;
+  if (req.body.isSticky !== undefined) interaction.isSticky = req.body.isSticky;
   interaction.attendees = attendees;
   interaction.updatedAt = new Date();
   interaction.updatedBy = {
@@ -1327,7 +1327,7 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
     completedAt: null,
   };
 
-  if (req.body.assignedTo) {
+  if (req.body.assignedTo !== undefined) {
     const assignedTo = fixTeamMember(req.body.assignedTo, account);
     actionItem.assignedTo = assignedTo;
 
@@ -1432,9 +1432,9 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
     return res.status(404).send(`Action item not found. Available action items: ${actionItems}`);
   }
 
-  if (req.body.title) actionItem.title = req.body.title;
-  if (req.body.dueDate) actionItem.dueDate = req.body.dueDate;
-  if (req.body.assignedTo) {
+  if (req.body.title !== undefined) actionItem.title = req.body.title;
+  if (req.body.dueDate !== undefined) actionItem.dueDate = req.body.dueDate;
+  if (req.body.assignedTo !== undefined) {
     const assignedTo = fixTeamMember(req.body.assignedTo, account);
     if (!assignedTo) {
       const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
