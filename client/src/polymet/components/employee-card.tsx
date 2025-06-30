@@ -1,16 +1,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
 } from "@/components/ui/card";
 import {
   MailIcon,
   PhoneIcon,
-  CalendarIcon,
   MoreHorizontalIcon,
   EditIcon,
   TrashIcon,
@@ -27,18 +24,16 @@ import { useState } from "react";
 
 interface EmployeeCardProps {
   employee: AccountEmployee;
-  onViewMeetings?: (employeeId: string) => void;
   onEdit?: (employeeId: string) => void;
   onDelete?: (employeeId: string) => void;
 }
 
 export default function EmployeeCard({
   employee,
-  onViewMeetings,
   onEdit,
   onDelete,
 }: EmployeeCardProps) {
-  const [details, setDetails] = useState(employee.details || "");
+  const [notes, setNotes] = useState(employee.notes || "");
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -97,22 +92,22 @@ export default function EmployeeCard({
         )}
         <div className="mt-3">
           <label
-            htmlFor={`employee-details-${employee.id}`}
+            htmlFor={`employee-notes-${employee.id}`}
             className="text-sm font-medium mb-1 block"
           >
             Notes
           </label>
           <Textarea
-            id={`employee-details-${employee.id}`}
+            id={`employee-notes-${employee.id}`}
             placeholder="Add notes about this employee..."
             className="resize-none text-sm"
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             rows={3}
           />
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-2 flex justify-between items-center">
+      {/* <CardFooter className="p-4 pt-2 flex justify-between items-center">
         <div className="flex items-center text-sm">
           <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
           <span className="text-muted-foreground">
@@ -129,7 +124,7 @@ export default function EmployeeCard({
             Last meeting: {new Date().toLocaleDateString()}
           </Badge>
         )}
-      </CardFooter>
+      </CardFooter> */}
     </Card>
   );
 }

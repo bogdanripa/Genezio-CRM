@@ -8,7 +8,8 @@ export type AccountEmployee = {
   email: string;
   phone?: string;
   notes?: string;
-  meetings?: string[]; // IDs of meetings they've attended
+  avatar?: string; // URL to the employee's avatar image
+  //meetings?: string[]; // IDs of meetings they've attended
 };
 
 export type InteractionType =
@@ -153,12 +154,12 @@ export const transferAccountOwnership = async(accountId: string, id: string): Pr
   return response.data;
 }
 
-export const addContactToAccount = async(accountId: string, contact: AccountEmployee): Promise<void> => {
+export const addContactToAccount = async(accountId: string, contact: AccountEmployee): Promise<AccountEmployee> => {
   const response = await axios.post(`/accounts/${accountId}/contacts`, contact);
   return response.data;
 }
 
-export const updateAccountContact = async(accountId: string, contact: AccountEmployee): Promise<void> => {
+export const updateAccountContact = async(accountId: string, contact: AccountEmployee): Promise<AccountEmployee> => {
   const response = await axios.put(`/accounts/${accountId}/contacts/${contact.id}`, contact);
   return response.data;
 }

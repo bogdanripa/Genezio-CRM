@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Account, AccountEmployee, addContactToAccount, removeContactFromAccount, updateAccountContact } from "@/polymet/data/accounts-data";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import ContactDetailDialog from "@/polymet/components/contact-detail-dialog";
 import { toast } from "@/hooks/use-toast";
 
@@ -37,12 +36,12 @@ export default function KeyContactsCard({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isNewContact, setIsNewContact] = useState(false);
 
-  const filteredEmployees = account.employees.filter(
+  const filteredEmployees = account.employees?.filter(
     (employee) =>
       employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       employee.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
 
   const handleAddContact = () => {
     setSelectedContact(undefined);
@@ -58,10 +57,12 @@ export default function KeyContactsCard({
 
   const handleSaveContact = (updatedContact: AccountEmployee) => {
     let updatedEmployees: AccountEmployee[];
+    if (!account.employees) account.employees = [];
+    if (!account.id) return
 
     if (isNewContact) {
       addContactToAccount(account.id, updatedContact).then(updatedContact => {
-        updatedEmployees = [...account.employees, updatedContact];
+        updatedEmployees = [...(account.employees ?? []), updatedContact];
         toast({
           title: "Contact added",
           description: `${updatedContact.name} has been added to the contacts.`,
@@ -70,6 +71,7 @@ export default function KeyContactsCard({
       });
     } else {
       updateAccountContact(account.id, updatedContact).then(updatedContact => {
+        if (!account.employees) return;
         updatedEmployees = account.employees.map((emp) =>
           emp.id === updatedContact.id ? updatedContact : emp
         );
@@ -84,7 +86,10 @@ export default function KeyContactsCard({
   };
 
   const handleDeleteContact = (contactId: string) => {
+    if (!account.id) return;
+
     removeContactFromAccount(account.id, contactId).then(() => {
+      if (!account.employees) return;
       const updatedEmployees = account.employees.filter(
         (emp) => emp.id !== contactId
       );
@@ -148,12 +153,12 @@ export default function KeyContactsCard({
                       <div className="font-medium truncate">
                         {employee.name}
                       </div>
-                      {employee.meetings.length > 0 && (
+                      {/* {employee.meetings.length > 0 && (
                         <Badge variant="secondary" className="ml-2">
                           {employee.meetings.length} meeting
                           {employee.meetings.length !== 1 ? "s" : ""}
                         </Badge>
-                      )}
+                      )} */}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {employee.role}
@@ -172,9 +177,9 @@ export default function KeyContactsCard({
                         </div>
                       )}
                     </div>
-                    {employee.details && (
+                    {employee.notes && (
                       <div className="mt-1 text-xs italic text-muted-foreground truncate">
-                        {employee.details}
+                        {employee.notes}
                       </div>
                     )}
                   </div>

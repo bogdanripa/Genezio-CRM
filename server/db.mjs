@@ -84,6 +84,7 @@ const userSchema = new mongoose.Schema({
     role: String,
     email: String,
     phone: String,
+    notes: String,
   }, {
     _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
