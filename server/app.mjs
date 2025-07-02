@@ -1076,6 +1076,13 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
   if (account.owner.id !== req.userInfo.userId)
     await sendNotification(account.owner.phone, `${req.userInfo.name} added a new ${newInteraction.type} (${newInteraction.title}) to ${account.name}.`);
   
+  // for each attendee, send a notification if they are not the owner or the current user
+  for (const attendee of attendees) {
+    if (attendee.id !== account.owner.id && attendee.id !== req.userInfo.userId && attendee.phone) {
+      await sendNotification(attendee.phone, `${req.userInfo.name} added you to a new ${newInteraction.type} (${newInteraction.title}) on ${account.name}.`);
+    }
+  }
+  
   await account.save();
 
   res.status(201).send(newInteraction);
@@ -1164,6 +1171,30 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
 
     return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
   }
+
+  if (req.body.attendees) {
+    // send new and deleted attendees notifications
+    const oldAttendees = interaction.attendees || [];
+    const newAttendees = attendees || [];
+    const addedAttendees = newAttendees.filter((newAttendee) =>
+      !oldAttendees.some((oldAttendee) => oldAttendee.id === newAttendee.id)
+    );
+    const removedAttendees = oldAttendees.filter((oldAttendee) =>
+      !newAttendees.some((newAttendee) => newAttendee.id === oldAttendee.id)
+    );
+
+    for (const attendee of addedAttendees) {
+      if (attendee.id !== account.owner.id && attendee.id !== req.userInfo.userId && attendee.phone) {
+        await sendNotification(attendee.phone, `${req.userInfo.name} added you to an existing ${interaction.type} (${interaction.title}) on ${account.name}.`);
+      }
+    }
+
+    for (const attendee of removedAttendees) {
+      if (attendee.id !== account.owner.id && attendee.id !== req.userInfo.userId && attendee.phone) {
+        await sendNotification(attendee.phone, `${req.userInfo.name} removed you from an existing ${interaction.type} (${interaction.title}) on ${account.name}.`);
+      }
+    }
+  }
   
   if (interactionType !== undefined) interaction.type = interactionType;
   if (req.body.timestamp !== undefined) interaction.timestamp = req.body.timestamp;
@@ -1171,7 +1202,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
   if (req.body.description !== undefined) interaction.description = req.body.description;
   if (req.body.metadata !== undefined) interaction.metadata = req.body.metadata;
   if (req.body.isSticky !== undefined) interaction.isSticky = req.body.isSticky;
-  interaction.attendees = attendees;
+  if (req.body.attendees) interaction.attendees = attendees;
   interaction.updatedAt = new Date();
   interaction.updatedBy = {
     id: req.userInfo.userId,

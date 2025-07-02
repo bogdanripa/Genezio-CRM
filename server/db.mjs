@@ -93,8 +93,8 @@ const userSchema = new mongoose.Schema({
     id:   { type: String, required: true },
     name: { type: String, required: true },
     email: { type: String, required: false },
+    phone: { type: String, required: false },
   }, { _id: false });
-
   
   const actionItemSchema = new mongoose.Schema({
     id: {
