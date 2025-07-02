@@ -1804,7 +1804,7 @@ app.get('/docs/swagger.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-app.get('/cron', async (req, res) => {
+app.post('/cron', async (req, res) => {
   console.log("Running cron job...");
   // Here you can call your cron functions
   const accounts = await Accounts.find({}).lean();
