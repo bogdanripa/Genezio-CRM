@@ -1094,7 +1094,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
  *   put:
  *     summary: Update an existing interaction
  *     tags: [Account Interactions]
- *     description: Updates the details of an existing interaction within the specified account.
+ *     description: Updates the details of an existing interaction within the specified account. None of the fields except for the interaction id are required.
  *     security:
  *       - bearerAuth: []
  *     parameters:
