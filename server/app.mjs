@@ -954,6 +954,7 @@ function fixAttendees(attendees, account) {
 
     let contact = null;
     const employees = account.employees || [];
+    employees.push(account.owner); // Include owner in employees
     if (attendee.id)
       contact = employees.find((employee) => employee.id === attendee.id);
     if (!contact && attendee.email)
