@@ -92,7 +92,6 @@ export default function AccountTimeline({
             <InteractionItem
               key={interaction.id}
               interaction={interaction}
-              isLatest={index === 0}
               setEditInteraction={setEditInteraction}
               deleteInteraction={deleteInteraction}
             />

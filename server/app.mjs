@@ -194,6 +194,13 @@ app.get("/users", checkAuth, async function (req, res, _next) {
 app.get("/accounts/", checkAuth, async function (req, res, _next) {
   const accounts = await getAllAccounts(req);
   const filteredAccounts = accounts.map((account) => {
+    // Filter out interactions with a future timestamp
+    const pastInteractions = account.interactions.filter(
+      (interaction) => !interaction.timestamp || new Date(interaction.timestamp) <= new Date()
+    );
+    const lastInteractionDate = pastInteractions.length > 0
+      ? pastInteractions[pastInteractions.length - 1].timestamp
+      : null;
     return {
       id: account.id,
       name: account.name,
@@ -205,9 +212,7 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
       numberOfTeamMembers: account.teamMembers.length,
       numberOfContacts: account.employees.length,
       numberOfInteractions: account.interactions.length,
-      lastInteractionDate: account.interactions.length > 0 
-        ? account.interactions[account.interactions.length - 1].timestamp 
-        : null,
+      lastInteractionDate,
       updatedAt: account.updatedAt || account.createdAt,
       metrics: account.metrics,
     };

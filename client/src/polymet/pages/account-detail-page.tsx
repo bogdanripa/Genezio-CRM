@@ -71,13 +71,14 @@ export default function AccountDetailPage() {
   }
 
   // Find the most recent interaction timestamp
+  const now = Date.now();
+  const validTimestamps = account.interactions
+    .map((i) => new Date(i.timestamp).getTime())
+    .filter((t) => t <= now);
+
   const lastInteractionDate =
-    account.interactions.length > 0
-      ? new Date(
-          Math.max(
-            ...account.interactions.map((i) => new Date(i.timestamp).getTime())
-          )
-        )
+    validTimestamps.length > 0
+      ? new Date(Math.max(...validTimestamps))
       : new Date(account.updatedAt);
 
   const lastInteractionText =

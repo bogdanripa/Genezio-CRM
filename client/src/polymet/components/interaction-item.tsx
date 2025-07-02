@@ -24,12 +24,10 @@ interface InteractionItemProps {
   interaction: AccountInteraction;
   setEditInteraction: (interaction: AccountInteraction) => void;
   deleteInteraction: (id: string) => void;
-  isLatest?: boolean;
 }
 
 export default function InteractionItem({
   interaction,
-  isLatest = false,
   setEditInteraction,
   deleteInteraction,
 }: InteractionItemProps) {
@@ -117,7 +115,7 @@ export default function InteractionItem({
 
   return (
     <div 
-      className={cn("flex gap-4 p-4 rounded-lg", isLatest && "bg-muted/50")} 
+      className={cn("flex gap-4 p-4 rounded-lg", new Date(interaction.timestamp) > new Date() ? "bg-blue-500/10" : "")} 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -144,7 +142,7 @@ export default function InteractionItem({
             )}
           >
             {getInteractionIcon(interaction.type)}
-            <span>{getInteractionLabel(interaction.type)}</span>
+            <span>{(new Date(interaction.timestamp)) > (new Date()) ? "Future " : ""}{getInteractionLabel(interaction.type)}</span>
           </Badge>
           {interaction.isSticky && (
             <Badge

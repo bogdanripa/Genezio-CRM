@@ -1,11 +1,9 @@
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CalendarIcon, UsersIcon } from "lucide-react";
 import { SimpleAccount } from "@/polymet/data/accounts-data";
 import AccountStatusBadge from "@/polymet/components/account-status-badge";
