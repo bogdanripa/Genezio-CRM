@@ -1042,9 +1042,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
     if (account.employees && account.employees.length > 0) {
       attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
     }
-    if (attendeesList.length === 0) {
-      attendeesList = ["no team members or contacts found"];
-    }
+    attendeesList.push(account.owner.name);
 
     return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
   }
@@ -1161,9 +1159,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
     if (account.employees && account.employees.length > 0) {
       attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
     }
-    if (attendeesList.length === 0) {
-      attendeesList = ["no team members or contacts found"];
-    }
+    attendeesList.push(account.owner.name);
 
     return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
   }
