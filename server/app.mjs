@@ -1,135 +1,105 @@
 import express from "express";
-import { AuthService } from "@genezio/auth";
 import cors from "cors";
 import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem } from "./db.mjs";
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import mongooseToSwagger from 'mongoose-to-swagger';
 import emailAuth from './emailCodeAuth.mjs';
-import { sendNotification } from "./notifications.mjs";
 import {processAllAccounts} from "./cron.mjs";
 
-const swaggerDefinition = {
-  openapi: '3.0.0',
-  info: {
-    title: 'Genezio CRM APIs',
-    version: '1.0.0',
-    description: 'OpenAPI spec for Genezio CRM APIs',
-  },
-  components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT', // optional
+import { getAllUsers } from "./modules/users.mjs";
+import { getAllAccountsSummary, getAccountDetails, createAccount, updateAccount, deleteAccount, transferOwnership } from "./modules/accounts.mjs";
+import { addActionItem, updateActionItem, completeActionItem } from "./modules/actionItems.mjs";
+import { getAllTeamMembersOnAccount, addTeamMember, removeTeamMember } from "./modules/teamMembers.mjs"
+import { addContact, updateContact, removeContact } from './modules/contacts.mjs';
+import { getLatestInteractions, addInteraction, updateInteraction, deleteInteraction, unstickInteraction } from "./modules/interactions.mjs";
+import { findByName } from "./modules/explore.mjs";
+import { checkAuth } from "./modules/auth.mjs";
+
+let swaggerSpec = null;
+
+function loadSwagger() {
+  if (swaggerSpec) return;
+  const swaggerDefinition = {
+    openapi: '3.0.0',
+    info: {
+      title: 'Genezio CRM APIs',
+      version: '1.0.0',
+      description: 'OpenAPI spec for Genezio CRM APIs',
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT', // optional
+        },
+      },
+      schemas: {
+        // all your schemas here
       },
     },
-    schemas: {
-      // all your schemas here
-    },
-  },
-  security: [
-    {
-      bearerAuth: [],
-    },
-  ],
-};
-
-function addIdToSchema(schema) {
-  if (!schema.properties.id) {
-    schema.properties.id = { type: 'string' };
-    if (!schema.required) {
-      schema.required = [];
-    }
-    schema.required.push('id');
-  }
-  schema = cleanSchema(schema);
-  return schema;
-}
-function cleanSchema(schema) {
-  if (schema.properties._id) {
-    delete schema.properties._id;
-    if (schema.required && schema.required.includes('_id')) {
-      schema.required = schema.required.filter((field) => field !== '_id');
-    }
-  }
-  return schema;
-}
-
-function addSwaggerSchemas() {
-  const accountSchema = addIdToSchema(mongooseToSwagger(Accounts));
-  const userSummarySchema = addIdToSchema(mongooseToSwagger(UserSummary));
-  const employeeSchema = addIdToSchema(mongooseToSwagger(Employee));
-  const basicInteractionSchema = mongooseToSwagger(BasicInteraction);
-  const interactionSchema = addIdToSchema(mongooseToSwagger(Interaction));
-  const actionItemSchema = cleanSchema(mongooseToSwagger(ActionItem));
-
-  swaggerDefinition.components.schemas = {
-    Account: accountSchema,
-    UserSummary: userSummarySchema,
-    Employee: employeeSchema,
-    BasicInteraction: basicInteractionSchema,
-    Interaction: interactionSchema,
-    ActionItem: actionItemSchema,
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   };
+
+  function addIdToSchema(schema) {
+    if (!schema.properties.id) {
+      schema.properties.id = { type: 'string' };
+      if (!schema.required) {
+        schema.required = [];
+      }
+      schema.required.push('id');
+    }
+    schema = cleanSchema(schema);
+    return schema;
+  }
+
+  function cleanSchema(schema) {
+    if (schema.properties._id) {
+      delete schema.properties._id;
+      if (schema.required && schema.required.includes('_id')) {
+        schema.required = schema.required.filter((field) => field !== '_id');
+      }
+    }
+    return schema;
+  }
+
+  function addSwaggerSchemas() {
+    const accountSchema = addIdToSchema(mongooseToSwagger(Accounts));
+    const userSummarySchema = addIdToSchema(mongooseToSwagger(UserSummary));
+    const employeeSchema = addIdToSchema(mongooseToSwagger(Employee));
+    const basicInteractionSchema = mongooseToSwagger(BasicInteraction);
+    const interactionSchema = addIdToSchema(mongooseToSwagger(Interaction));
+    const actionItemSchema = cleanSchema(mongooseToSwagger(ActionItem));
+
+    swaggerDefinition.components.schemas = {
+      Account: accountSchema,
+      UserSummary: userSummarySchema,
+      Employee: employeeSchema,
+      BasicInteraction: basicInteractionSchema,
+      Interaction: interactionSchema,
+      ActionItem: actionItemSchema,
+    };
+  }
+
+  addSwaggerSchemas();
+  const options = {
+    swaggerDefinition,
+    apis: ['./app.mjs'], // adjust paths to where your JSDoc comments are
+  };
+  
+  swaggerSpec = swaggerJSDoc(options);
 }
 
-addSwaggerSchemas();
-
-const options = {
-  swaggerDefinition,
-  apis: ['./app.mjs'], // adjust paths to where your JSDoc comments are
-};
-
-const swaggerSpec = swaggerJSDoc(options);
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use('/auth/email-code', emailAuth);
-
-async function checkAuth(req, res, next) {
-  try {
-    const token = req.headers.authorization.split(" ")[1];
-    const userInfo = await AuthService.getInstance().userInfoForToken(token);
-
-    if (!userInfo.address) {
-      const domain = userInfo.email.split("@")[1];
-      await Users.updateOne(
-        { userId: userInfo.userId },
-        {
-          $set: {
-            address: domain,
-          },
-        }
-      );
-      userInfo.address = domain;
-    }
-
-    req.userInfo = userInfo;
-    next();
-  } catch (error) {
-    res.status(401).send("Unauthorized");
-  }
-}
-
-async function getAllAccounts(req) {
-  const address = req.userInfo.address;
-  return Accounts.find({ domain: address })
-    .sort({ "name": 1 })
-    .collation({ locale: 'en', strength: 1 })  // case-insensitive
-    .lean();
-}
-
-async function getAccount(req, accountId) {
-  const address = req.userInfo.address;
-  const account = await Accounts.findOne({ 
-    id: accountId, 
-    "domain": address
-  });
-  if (!account) return null;
-  return account;
-}
 
 /**
  * @openapi
@@ -159,18 +129,13 @@ async function getAccount(req, accountId) {
  *                   address:
  *                     type: string
  */
-app.get("/users", checkAuth, async function (req, res, _next) {
-  const address = req.userInfo.address;
-  const users = await Users.find({address}).lean();
-  if (users) {
-    users.forEach((user) => {
-      user.id = user.userId;
-      delete user.userId;
-    });
+app.get("/users", checkAuth, async function (req, res) {
+  try {
+    const users = await getAllUsers(req.userInfo);
+    res.send(users);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-  if (!users) users = [];
-
-  res.send(users);
 });
 
 /**
@@ -191,35 +156,14 @@ app.get("/users", checkAuth, async function (req, res, _next) {
  *               items:
  *                 $ref: '#/components/schemas/Account'
  */
-app.get("/accounts/", checkAuth, async function (req, res, _next) {
-  const accounts = await getAllAccounts(req);
-  const filteredAccounts = accounts.map((account) => {
-    // Filter out interactions with a future timestamp
-    const pastInteractions = account.interactions.filter(
-      (interaction) => !interaction.timestamp || new Date(interaction.timestamp) <= new Date()
-    );
-    const lastInteractionDate = pastInteractions.length > 0
-      ? pastInteractions[pastInteractions.length - 1].timestamp
-      : null;
-    return {
-      id: account.id,
-      name: account.name,
-      industry: account.industry,
-      status: account.status,
-      description: account.description,
-      owner: account.owner,
-      accountType: account.accountType || "Client",
-      numberOfTeamMembers: account.teamMembers.length,
-      numberOfContacts: account.employees.length,
-      numberOfInteractions: account.interactions.length,
-      lastInteractionDate,
-      updatedAt: account.updatedAt || account.createdAt,
-      metrics: account.metrics,
-    };
-  });
-  res.send(filteredAccounts);
+app.get("/accounts/", checkAuth, async function (req, res) {
+  try {
+    const accountsSummary = await getAllAccountsSummary(req.userInfo);
+    res.send(accountsSummary);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
 });
-
 /**
  * @openapi
  * /accounts/{account_id}:
@@ -245,19 +189,13 @@ app.get("/accounts/", checkAuth, async function (req, res, _next) {
  *       404:
  *         description: Account not found
  */
-app.get("/accounts/:account_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.get("/accounts/:account_id", checkAuth, async function(req, res) {
+  try {
+    const accountDetails = await getAccountDetails(req.userInfo, { account_id: req.params.account_id });
+    res.send(accountDetails);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-  if (account.interactions && account.interactions.length)
-    account.interactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  if (account.actionItems && account.actionItems.length)
-    account.actionItems.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-  res.send(account);
 });
 
 /**
@@ -322,28 +260,13 @@ app.get("/accounts/:account_id", checkAuth, async function (req, res, _next) {
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts", checkAuth, async function (req, res, _next) {
-  const newAccount = {
-    id: crypto.randomUUID(),
-    name: req.body.name,
-    website: req.body.website,
-    description: req.body.description,
-    industry: req.body.industry,
-    domain: req.userInfo.address,
-    owner: {
-      id: req.userInfo.userId,
-      name: req.userInfo.name,
-      email: req.userInfo.email,
-      phone: req.userInfo.phone,
-    },
-    metrics: req.body.metrics,
-  };
-
-  if (req.body.status !== undefined) newAccount.status = req.body.status;
-  if (req.body.accountType !== undefined) newAccount.accountType = req.body.accountType;
-
-  const account = await Accounts.create(newAccount);
-  res.status(201).send(account);
+app.post("/accounts", checkAuth, async function (req, res) {
+  try {
+    const account = await createAccount(req.userInfo, req.body);
+    res.status(201).send(account);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
 });
 
 /**
@@ -412,29 +335,14 @@ app.post("/accounts", checkAuth, async function (req, res, _next) {
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.put("/accounts/:account_id", checkAuth, async function (req, res) {
+  req.body.account_id = req.params.account_id;
+  try {
+    const account = await updateAccount(req.userInfo, req.body);
+    res.status(200).send(account);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  if (req.body.name !== undefined) account.name = req.body.name;
-  if (req.body.website !== undefined) account.website = req.body.website;
-  if (req.body.description !== undefined) account.description = req.body.description;
-  if (req.body.industry !== undefined) account.industry = req.body.industry;
-  if (req.body.status !== undefined) account.status = req.body.status;
-  if (req.body.metrics !== undefined) account.metrics = req.body.metrics;
-  if (req.body.accountType !== undefined) account.accountType = req.body.accountType;
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${account.name}.`);
-  
-  await account.save();
-
-  res.send(account);
 });
 
 /**
@@ -458,20 +366,58 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res, _next) {
  *       404:
  *         description: Account not found
  */
-app.delete("/accounts/:account_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.delete("/accounts/:account_id", checkAuth, async function (req, res) {
+  try {
+    await deleteAccount(req.userInfo, { account_id: req.params.account_id });
+    res.status(204).send();
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
+});
 
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `Account ${account.name} has been deleted by ${req.userInfo.name}.`);
-
-  const response = await Accounts.deleteOne({ id: accountId });
-  res.status(204).send();
+/**
+ * @openapi
+ * /accounts/{account_id}/teamMembers:
+ *   get:
+ *     summary: Gets the list of team members on an existing account
+ *     tags: [Account Team Members]
+ *     description: Gets the list of team members - including the account owner - on a specified account, identified by its account_id.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: account_id
+ *         in: path
+ *         required: true
+ *         description: The ID of the account
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: The list of team members and a message
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Text response
+ *                 teamMembers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/UserSummary'
+ *       404:
+ *         description: Account not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.get("/accounts/:account_id/teamMembers", checkAuth, async function (req, res) {
+  try {
+    const teamMembers = await getAllTeamMembersOnAccount(req.userInfo, req.params.account_id);
+    res.send(teamMembers);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
 });
 
 /**
@@ -514,44 +460,13 @@ app.delete("/accounts/:account_id", checkAuth, async function (req, res, _next) 
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, res) {
+  try {
+    const teamMember = await addTeamMember(req.userInfo, { account_id: req.params.account_id, id: req.body.id });
+    res.status(201).send(teamMember);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  const newMember = await Users.findOne({
-    userId: req.body.id
-  }).lean();
-  if (!newMember) {
-    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-    return res.status(404).send(`User not found. Account team members are: ${teamMembers}`);
-  }
-  newMember.id = newMember.userId;
-  delete newMember.userId;
-
-  // Flatten team members
-  account.teamMembers = account.teamMembers.map((m) =>
-    typeof m.toObject === "function" ? m.toObject() : m
-  );
-
-  account.teamMembers.push(newMember);
-
-  // remove account.owner from teamMembers if it exists
-  const ownerIndex = account.teamMembers.findIndex((member) => member.id === account.owner.id);
-  if (ownerIndex !== -1) {
-    account.teamMembers.splice(ownerIndex, 1);
-  }
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} added ${newMember.name} to ${account.name}.`);
-  
-  await account.save();
-
-  res.status(201).send(newMember);
 });
 
 /**
@@ -584,41 +499,13 @@ app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, re
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  let memberId = req.params.team_member_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async function (req, res) {
+  try {
+    await removeTeamMember(req.userInfo, { account_id: req.params.account_id, team_member_id: req.params.team_member_id });
+    res.status(204).send();
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  if (memberId == 'undefined') {
-    memberId = undefined;
-  }
-
-  // Flatten team members
-  account.teamMembers = account.teamMembers.map((m) =>
-    typeof m.toObject === "function" ? m.toObject() : m
-  );
-
-  const teamMemberName = account.teamMembers.find((member) => member.id == memberId)?.name;
-
-  const memberIndex = account.teamMembers.findIndex((member) => { return member.id == memberId});
-  if (memberIndex === -1) {
-    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-    return res.status(404).send(`Team member not found. Account team members are: ${teamMembers}`);
-  }
-
-  account.teamMembers.splice(memberIndex, 1);
-
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} removed ${teamMemberName} from ${account.name}.`);
-  
-  await account.save();
-
-  res.status(204).send();
 });
 
 /**
@@ -657,34 +544,13 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (req, res) {
+  try {
+    await transferOwnership(req.userInfo, {account_id: req.params.account_id, id: req.params.id});
+    res.status(204).send();
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-  const newOwner = await Users.findOne({
-    userId: req.body.id
-  }).lean();
-
-  if (!newOwner) {
-    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-    return res.status(404).send(`User not found. Account team members are: ${teamMembers}`);
-  }
-
-  newOwner.id = newOwner.userId;
-  delete newOwner.userId;
-
-  account.owner = newOwner;
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} assigned you the ${account.name} account.`);
-  
-  await account.save();
-
-  res.status(204).send();
 });
 
 /**
@@ -736,36 +602,17 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, _next) {
+app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res) {
   if (!req.body.name || !req.body.role) {
     return res.status(400).send("Name and role are required fields.");
   }
-
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+  try {
+    req.body.account_id = req.params.account_id;
+    const contact = await addContact(req.userInfo, req.body);
+    res.status(201).send(contact);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  const newContact = {
-    id: crypto.randomUUID(),
-    name: req.body.name,
-    role: req.body.role,
-    email: req.body.email,
-    phone: req.body.phone,
-    notes: req.body.notes,
-  };
-
-  account.employees.push(newContact);
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} added ${newContact.name} to ${account.name}.`);
-
-  await account.save();
-
-  res.status(201).send(newContact);
 });
 
 /**
@@ -820,34 +667,15 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res, 
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const contactId = req.params.contact_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res) {
+  try {
+    req.body.account_id = req.params.account_id;
+    req.body.contact_id = req.params.contact_id;
+    const contact = await updateContact(req.userInfo, req.body);
+    res.send(contact);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  const contact = account.employees.find((contact) => contact.id === contactId);
-  if (!contact) {
-    const contacts = (account.employees || []).map((m) => `${m.name} (contact id: ${m.id})`).join(", ");
-    return res.status(404).send(`Contact not found. Account contacts are: ${contacts}`);
-  }
-
-  if (req.body.name !== undefined) contact.name = req.body.name;
-  if (req.body.role !== undefined) contact.role = req.body.role;
-  if (req.body.email !== undefined) contact.email = req.body.email;
-  if (req.body.phone !== undefined) contact.phone = req.body.phone;
-  if (req.body.notes !== undefined) contact.notes = req.body.notes;
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} updated ${contact.name}'s details on ${account.name}.`);
-  
-  await account.save();
-
-  res.send(contact);
 });
 
 /**
@@ -880,109 +708,16 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const contactId = req.params.contact_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res) {
+  try {
+    req.body.account_id = req.params.account_id;
+    req.body.contact_id = req.params.contact_id;
+    await removeContact(req.userInfo, req.body);
+    res.status(204).send();
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  // Flatten employees
-  account.employees = account.employees.map((m) =>
-    typeof m.toObject === "function" ? m.toObject() : m
-  );
-
-  const contactName = account.employees.find((contact) => contact.id === contactId)?.name;
-
-  const contactIndex = account.employees.findIndex((contact) => contact.id === contactId);
-  if (contactIndex === -1) {
-    const contacts = (account.employees || []).map((m) => `${m.name} (contact id: ${m.id})`).join(", ");
-    return res.status(404).send(`Contact not found. Account contacts are: ${contacts}`);
-  }
-
-  account.employees.splice(contactIndex, 1);
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} removed ${contactName} from ${account.name}.`);
-  
-  await account.save();
-
-  res.status(204).send();
 });
-
-function fixTeamMember(teamMember, account) {
-  if (!teamMember) return null;
-  if (teamMember.id && teamMember.name && teamMember.email) return teamMember;
-  let user = null;
-  const teamMembers = account.teamMembers || [];
-  if (teamMember.id)
-    user = teamMembers.find((member) => member.id === teamMember.id);
-  if (!user && teamMember.email)
-    user = teamMembers.find((member) => member.email === teamMember.email);
-  if (!user && teamMember.name)
-    user = teamMembers.find((member) => member.name.toLowerCase() === teamMember.name.toLowerCase());
-  if (user)
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email
-    };
-  console.error(`Could not find team member ${JSON.stringify(teamMember)} in ${account.name}`);
-  return null;
-}
-
-function fixAttendees(attendees, account) {
-  if (!attendees || !Array.isArray(attendees)) {
-    return [];
-  }
-  const errors = [];
-  const attendeesList = attendees.map((attendee) => {
-    if (attendee.id && attendee.name && attendee.email) return attendee;
-    let user = null;
-    const teamMembers = account.teamMembers || [];
-    if (attendee.id)
-      user = teamMembers.find((member) => member.id === attendee.id);
-    if (!user && attendee.email)
-      user = teamMembers.find((member) => member.email === attendee.email);
-    if (!user && attendee.name)
-      user = teamMembers.find((member) => member.name.toLowerCase() === attendee.name.toLowerCase());
-    if (user)
-      return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-      };
-
-    let contact = null;
-    const employees = account.employees || [];
-    employees.push(account.owner); // Include owner in employees
-    if (attendee.id)
-      contact = employees.find((employee) => employee.id === attendee.id);
-    if (!contact && attendee.email)
-      contact = employees.find((employee) => employee.email === attendee.email);
-    if (!contact && attendee.name)
-      contact = employees.find((employee) => employee.name.toLowerCase() === attendee.name.toLowerCase());
-    if (contact)
-      return {
-        id: contact.id,
-        name: contact.name,
-        email: contact.email
-      };
-    
-    console.error(`Could not find attendee ${JSON.stringify(attendee)} in ${account.name}`);
-    errors.push(attendee.name || attendee.email || attendee.id || "Unknown attendee");
-    return null;
-  });
-  if (errors.length > 0) {
-    return `Cound not find attendees: ${errors.join(', ')}`;
-  }
-  // Filter out null attendees
-  return attendeesList;
-}
 
 /**
  * @openapi
@@ -1018,79 +753,14 @@ function fixAttendees(attendees, account) {
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/interactions", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.post("/accounts/:account_id/interactions", checkAuth, async function (req, res) {
+  try {
+    req.body.account_id = req.params.account_id;
+    const interaction = await addInteraction(req.userInfo, req.body);
+    res.status(201).send(interaction);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  if (!req.body.title || !req.body.type) {
-    return res.status(400).send("Interaction type is required");
-  }
-
-  const interactionType = req.body.type.toLowerCase();
-
-  const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
-  if (!validTypes.includes(interactionType)) {
-    return res.status(400).send(`Interaction type must be one of ${validTypes.join(', ')}`);
-  }
-
-  let attendees = fixAttendees(req.body.attendees, account);
-  if (typeof attendees === 'string') {
-    // get a list of account team members and contacts
-    let attendeesList = [];
-    if (account.teamMembers && account.teamMembers.length > 0) {
-      attendeesList = account.teamMembers.map((member) => member.name);
-    }
-    if (account.employees && account.employees.length > 0) {
-      attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
-    }
-    attendeesList.push(account.owner.name);
-
-    return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
-  }
-
-  const newInteraction = {
-    id: crypto.randomUUID(),
-    type: interactionType,
-    createdAt: new Date(),
-    createdBy: {
-      id: req.userInfo.userId,
-      name: req.userInfo.name,
-      email: req.userInfo.email,
-    },
-    title: req.body.title,
-    description: req.body.description,
-    attendees,
-    metadata: req.body.metadata,
-  };
-
-  if (req.body.timestamp !== undefined) {
-    newInteraction.timestamp = req.body.timestamp;
-  }
-
-  if (req.body.isSticky !== undefined) {
-    newInteraction.isSticky = req.body.isSticky;
-  }
-
-  account.interactions.push(newInteraction);
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} added a new ${newInteraction.type} (${newInteraction.title}) to ${account.name}.`);
-  
-  // for each attendee, send a notification if they are not the owner or the current user
-  for (const attendee of attendees) {
-    if (attendee.id !== account.owner.id && attendee.id !== req.userInfo.userId && attendee.phone) {
-      await sendNotification(attendee.phone, `${req.userInfo.name} added you to a new ${newInteraction.type} (${newInteraction.title}) on ${account.name}.`);
-    }
-  }
-  
-  await account.save();
-
-  res.status(201).send(newInteraction);
 });
 
 /**
@@ -1133,94 +803,15 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const interactionId = req.params.interaction_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res) {
+  try {
+    req.body.account_id = req.params.account_id;
+    req.body.interaction_id = req.params.interaction_id;
+    const interaction = await updateInteraction(req.userInfo, req.body);
+    res.send(interaction);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
-  if (!interaction) {
-    let interactions = "No interactions on this account.";
-    if (account.interactions && account.interactions.length > 0) {
-      interactions = account.interactions.map((interaction) => `${interaction.title} (interaction id: ${interaction.id})`).join(", ");
-    }
-    return res.status(404).send(`Interaction not found. Available interactions: ${interactions}`);
-  }
-
-  let interactionType = req.body.type;
-  if (interactionType !== undefined) {
-    interactionType = interactionType.toLowerCase();
-
-    const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
-    if (!validTypes.includes(interactionType)) {
-      return res.status(400).send(`Interaction type must be one of ${validTypes.join(', ')}`);
-    }
-  }
-
-  let attendees = fixAttendees(req.body.attendees, account);
-  if (typeof attendees === 'string') {
-    // get a list of account team members and contacts
-    let attendeesList = [];
-    if (account.teamMembers && account.teamMembers.length > 0) {
-      attendeesList = account.teamMembers.map((member) => member.name);
-    }
-    if (account.employees && account.employees.length > 0) {
-      attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
-    }
-    attendeesList.push(account.owner.name);
-
-    return res.status(400).send(`${attendees}. Available attendees are: ${attendeesList.join(', ')}`);
-  }
-
-  if (req.body.attendees) {
-    // send new and deleted attendees notifications
-    const oldAttendees = interaction.attendees || [];
-    const newAttendees = attendees || [];
-    const addedAttendees = newAttendees.filter((newAttendee) =>
-      !oldAttendees.some((oldAttendee) => oldAttendee.id === newAttendee.id)
-    );
-    const removedAttendees = oldAttendees.filter((oldAttendee) =>
-      !newAttendees.some((newAttendee) => newAttendee.id === oldAttendee.id)
-    );
-
-    for (const attendee of addedAttendees) {
-      if (attendee.id !== account.owner.id && attendee.id !== req.userInfo.userId && attendee.phone) {
-        await sendNotification(attendee.phone, `${req.userInfo.name} added you to an existing ${interaction.type} (${interaction.title}) on ${account.name}.`);
-      }
-    }
-
-    for (const attendee of removedAttendees) {
-      if (attendee.id !== account.owner.id && attendee.id !== req.userInfo.userId && attendee.phone) {
-        await sendNotification(attendee.phone, `${req.userInfo.name} removed you from an existing ${interaction.type} (${interaction.title}) on ${account.name}.`);
-      }
-    }
-  }
-  
-  if (interactionType !== undefined) interaction.type = interactionType;
-  if (req.body.timestamp !== undefined) interaction.timestamp = req.body.timestamp;
-  if (req.body.title !== undefined) interaction.title = req.body.title;
-  if (req.body.description !== undefined) interaction.description = req.body.description;
-  if (req.body.metadata !== undefined) interaction.metadata = req.body.metadata;
-  if (req.body.isSticky !== undefined) interaction.isSticky = req.body.isSticky;
-  if (req.body.attendees) interaction.attendees = attendees;
-  interaction.updatedAt = new Date();
-  interaction.updatedBy = {
-    id: req.userInfo.userId,
-    name: req.userInfo.name,
-    email: req.userInfo.email,
-  };
-
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} updated a ${interaction.type} (${interaction.title}) on ${account.name}.`);
-  
-  await account.save();
-
-  res.send(interaction);
 });
 
 /**
@@ -1253,40 +844,15 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const interactionId = req.params.interaction_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res) {
+  try {
+    req.body.account_id = req.params.account_id;
+    req.body.interaction_id = req.params.interaction_id;
+    await deleteInteraction(req.userInfo, req.body);
+    res.status(204).send();
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  // Flatten interactions
-  account.interactions = account.interactions.map((m) =>
-    typeof m.toObject === "function" ? m.toObject() : m
-  );
-
-  const interactionTitle = account.interactions.find((interaction) => interaction.id === interactionId)?.title;
-
-  const interactionIndex = account.interactions.findIndex((interaction) => interaction.id === interactionId);
-  if (interactionIndex === -1) {
-    let interactions = "No interactions on this account.";
-    if (account.interactions && account.interactions.length > 0) {
-      interactions = account.interactions.map((interaction) => `${interaction.title} (interaction id: ${interaction.id})`).join(", ");
-    }
-    return res.status(404).send(`Interaction not found. Available interactions: ${interactions}`);
-  }
-
-  account.interactions.splice(interactionIndex, 1);
-  
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} removed ${interactionTitle} from ${account.name}.`);
-  
-  await account.save();
-
-  res.status(204).send();
 });
 
 /**
@@ -1339,58 +905,17 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
-  }
-
+app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, res) {
   if (!req.body.title || !req.body.dueDate) {
     return res.status(400).send("Title and due date are required fields.");
   }
-  
-  const actionItem = {
-    id: crypto.randomUUID(),
-    title: req.body.title,
-    dueDate: req.body.dueDate,
-    completed: false,
-    completedAt: null,
-  };
-
-  if (req.body.assignedTo !== undefined) {
-    const assignedTo = fixTeamMember(req.body.assignedTo, account);
-    actionItem.assignedTo = assignedTo;
-
-    if (!assignedTo) {
-      // get a list of team members
-      const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-      return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
-    }
-
-    const assignedUser = await Users.findOne({
-      userId: assignedTo.id
-    }).lean();
-
-    if (!assignedUser) {
-      const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-      return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
-    }
-
-    if (assignedUser.userId !== req.userInfo.userId && assignedUser.phone)
-      await sendNotification(assignedUser.phone, `${req.userInfo.name} assigned you "${actionItem.title}" on ${account.name}.`);
+  try {
+    req.body.account_id = req.params.account_id;
+    const actionItem = await addActionItem(req.userInfo, req.body);
+    res.status(201).send(actionItem);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  account.actionItems.push(actionItem);
-
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} added a new action item (${actionItem.title}) to ${account.name}.`);
-  
-  await account.save();
-
-  res.send(actionItem);
 });
 
 /**
@@ -1446,55 +971,15 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const actionItemId = req.params.action_item_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async function (req, res) {
+  try {
+    req.body.account_id = req.params.account_id;
+    req.body.action_item_id = req.params.action_item_id;
+    const actionItem = await updateActionItem(req.userInfo, req.body);
+    res.send(actionItem);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  const actionItem = account.actionItems.find((item) => item.id === actionItemId);
-  if (!actionItem) {
-    let actionItems = "No action items on this account.";
-    if (account.actionItems && account.actionItems.length > 0) {
-      actionItems = account.actionItems.map((item) => `${item.title} (action item id: ${item.id})`).join(", ");
-    }
-    return res.status(404).send(`Action item not found. Available action items: ${actionItems}`);
-  }
-
-  if (req.body.title !== undefined) actionItem.title = req.body.title;
-  if (req.body.dueDate !== undefined) actionItem.dueDate = req.body.dueDate;
-  if (req.body.assignedTo !== undefined) {
-    const assignedTo = fixTeamMember(req.body.assignedTo, account);
-    if (!assignedTo) {
-      const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-      return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
-    }
-
-    if (assignedTo.id !== actionItem.assignedTo?.id) {
-      const assignedUser = await Users.findOne({
-        userId: assignedTo.id
-      }).lean();
-  
-      if (!assignedUser) {
-        const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-        return res.status(404).send(`Assigned user not found. Account team members are: ${teamMembers}`);
-      }
-      if (assignedTo.id !== req.userInfo.userId && assignedUser.phone)
-        await sendNotification(assignedUser.phone, `${req.userInfo.name} assigned you "${actionItem.title}" on ${account.name}.`);
-    }
-    actionItem.assignedTo = assignedTo;
-  }
-
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} updated an action item (${actionItem.title}) on ${account.name}.`);
-  
-  await account.save();
-
-  res.send(actionItem);
 });
 
 /**
@@ -1531,34 +1016,13 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const actionItemId = req.params.action_item_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth, async function (req, res) {
+  try {
+    const actionItem = await completeActionItem(req.userInfo, { account_id: req.params.account_id, action_item_id: req.params.action_item_id});
+    res.send(actionItem);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  const actionItem = account.actionItems.find((item) => item.id === actionItemId);
-  if (!actionItem) {
-    let actionItems = "No action items on this account.";
-    if (account.actionItems && account.actionItems.length > 0) {
-      actionItems = account.actionItems.map((item) => `${item.title} (action item id: ${item.id})`).join(", ");
-    }
-    return res.status(404).send(`Action item not found. Available action items: ${actionItems}`);
-  }
-
-  actionItem.completed = true;
-  actionItem.completedAt = new Date();
-
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} completed "${actionItem.title}" on ${account.name}.`);
-  
-  await account.save();
-
-  res.send(actionItem);
 });
 
 /**
@@ -1595,33 +1059,13 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth,
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth, async function (req, res, _next) {
-  const accountId = req.params.account_id;
-  const interactionId = req.params.interaction_id;
-  const account = await getAccount(req, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(req);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    return res.status(404).send(`Account not found. Available accounts: ${accountNames}`);
+app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth, async function (req, res) {
+  try {
+    const interaction = await unstickInteraction(req.userInfo, { account_id: req.params.account_id, interaction_id: req.params.interaction_id });
+    res.send(interaction);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
-  if (!interaction) {
-    let interactions = "No interactions on this account.";
-    if (account.interactions && account.interactions.length > 0) {
-      interactions = account.interactions.map((interaction) => `${interaction.title} (interaction id: ${interaction.id})`).join(", ");
-    }
-    return res.status(404).send(`Interaction not found. Available interactions: ${interactions}`);
-  }
-
-  interaction.isSticky = false;
-
-  if (account.owner.id !== req.userInfo.userId)
-    await sendNotification(account.owner.phone, `${req.userInfo.name} unstick'd "${interaction.title}" on ${account.name}.`);
-  
-  await account.save();
-
-  res.send(interaction);
 });
 
 /**
@@ -1654,105 +1098,14 @@ app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth,
  *       401:
  *         description: Unauthorized
  */
-app.get("/interactions/latest", checkAuth, async function (req, res, _next) {
-  const accounts = await getAllAccounts(req);
-  const interactionsAcrossAccounts = [];
-  accounts.forEach((account) => {
-    account.interactions.forEach((interaction) => {
-      if (!interaction.createdAt) {
-        return;
-      }
-      interactionsAcrossAccounts.push({
-        createdAt: interaction.createdAt,
-        text: `${interaction.createdBy.name} added a ${interaction.type} to ${account.name}`,
-        accountId: account.id,
-      });
-    });
-  });
-
-  interactionsAcrossAccounts.sort((a, b) => {
-    return b.createdAt - a.createdAt;
-  });
-
-  const latestInteractions = interactionsAcrossAccounts.slice(0, 5);
-  res.send(latestInteractions);
-});
-
-function findOneTerm(term, accounts) {
-  const regex = new RegExp(term, 'i');
-  const results = [];
-
-  for (const account of accounts) {
-    if (regex.test(account.name)) {
-      results.push({
-        type: "account",
-        account_id: account.id,
-        url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
-        account_name: account.name,
-      });
-    }
-
-    for (const contact of account.employees) {
-      if (regex.test(contact.name)) {
-        results.push({
-          type: "contact",
-          account_id: account.id,
-          url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
-          account_name: account.name,
-          contact_id: contact.id,
-          contact_name: contact.name,
-          contact_role: contact.role,
-          contact_email: contact.email,
-          contact_phone: contact.phone,
-          contact_notes: contact.notes,
-        });
-      }
-    }
-
-    for (const teamMember of account.teamMembers) {
-      if (regex.test(teamMember.name)) {
-        results.push({
-          type: "team_member",
-          account_id: account.id,
-          url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
-          account_name: account.name,
-          team_member_id: teamMember.id,
-          team_member_name: teamMember.name,
-          team_member_email: teamMember.email,
-          team_member_role: teamMember.role,
-        });
-      }
-    }
-
-    for (const interaction of account.interactions) {
-      if (regex.test(interaction.title)) {
-        results.push({
-          type: "interaction",
-          account_id: account.id,
-          url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
-          account_name: account.name,
-          interaction_id: interaction.id,
-          interaction_title: interaction.title,
-        });
-      }
-    }
-
-    for (const actionItem of account.actionItems) {
-      if (regex.test(actionItem.title)) {
-        results.push({
-          type: "action_item",
-          account_id: account.id,
-          url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
-          account_name: account.name,
-          action_item_id: actionItem.id,
-          action_item_title: actionItem.title,
-        });
-      }
-    }
+app.get("/interactions/latest", checkAuth, async function (req, res) {
+  try {
+    const latestInteractions = await getLatestInteractions(req.userInfo);
+    res.send(latestInteractions);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  return results;
-}
+});
 
 /**
  * @openapi
@@ -1771,37 +1124,22 @@ function findOneTerm(term, accounts) {
  *         schema:
  *           type: string
  */
-app.get("/find", checkAuth, async function (req, res, _next) {
-  const query = req.query.name;
-  if (!query) {
+app.get("/find", checkAuth, async function (req, res) {
+  const name = req.query.name;
+  if (!name) {
     return res.status(400).send("Query parameter 'name' is required");
   }
-
-  const terms = query.trim().split(/\s+/);
-  const accounts = await getAllAccounts(req);
-
-  const combinedResults = [];
-
-  for (const term of terms) {
-    const resultsForTerm = findOneTerm(term, accounts);
-    combinedResults.push(...resultsForTerm);
+  try {
+    const results = await findByName(req.userInfo, { name });  
+    res.send(results);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
-
-  // Optional: deduplicate by type + id
-  const seen = new Set();
-  const deduplicated = combinedResults.filter(result => {
-    const key = `${result.type}-${result[result.type + "_id"]}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  res.status(200).send(deduplicated);
 });
 
-app.get('/docs/swagger.json', (req, res) => {
+app.get('/docs/swagger.json', loadSwagger, (req, res) => {
   res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
+  res.send(JSON.stringify(swaggerSpec, null, 2));
 });
 
 app.post('/cron', async (req, res) => {
@@ -1829,7 +1167,7 @@ app.post('/cron', async (req, res) => {
   res.send("Cron job executed successfully");
 });
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/docs', loadSwagger, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.listen(8080, () => {
   console.log(
