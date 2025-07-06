@@ -61,6 +61,11 @@ export async function initAuth({ email }) {
   return "An email was sent with the code to authenticate. Please share it back with me.";
 }
 
+function hexInc(hex) {
+  const num = BigInt("0x" + hex);
+  return (num + BigInt(1)).toString(16);
+}
+
 async function getToken(userId) {
   const authSession = await ActiveSessions.findOne({ userId: hexInc(userId) }).sort({ date: -1 });
   if (!authSession) {

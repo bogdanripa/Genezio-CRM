@@ -660,7 +660,7 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
  */
 app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (req, res) {
   try {
-    await accountModule.transferOwnership({ userInfo: req.userInfo, account_id: req.params.account_id, id: req.params.id});
+    await accountModule.transferOwnership({ userInfo: req.userInfo, account_id: req.params.account_id, id: req.body.id});
     res.status(204).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");

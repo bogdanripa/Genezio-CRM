@@ -65,7 +65,7 @@ export async function removeTeamMember({ userInfo, account_id, team_member_id })
 
   const teamMemberName = account.teamMembers.find((member) => member.id == team_member_id)?.name;
 
-  const memberIndex = account.teamMembers.findIndex((member) => { return member.id == memberId});
+  const memberIndex = account.teamMembers.findIndex((member) => { return member.id == team_member_id});
   if (memberIndex === -1) {
     const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
     throw {status: 404, message: `Team member not found. Account team members are: ${teamMembers}`}

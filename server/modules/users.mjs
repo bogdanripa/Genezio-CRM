@@ -9,7 +9,7 @@ export async function getAllUsers({ userInfo }) {
         delete user.userId;
         });
     }
-    if (!users) users = [];
+    if (!users) return [];
 
     return users;
 }

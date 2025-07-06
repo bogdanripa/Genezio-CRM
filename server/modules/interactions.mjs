@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { getAccount, getAllAccounts } from "./accounts.mjs";
 import { sendNotification } from "./notifications.mjs";
 
@@ -45,7 +46,7 @@ function fixAttendees(attendees, account) {
       return null;
     });
     if (errors.length > 0) {
-      return `Cound not find attendees: ${errors.join(', ')}`;
+      return `Could not find attendees: ${errors.join(', ')}`;
     }
     // Filter out null attendees
     return attendeesList;

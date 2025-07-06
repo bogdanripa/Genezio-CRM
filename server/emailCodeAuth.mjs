@@ -3,11 +3,6 @@ import { initAuth, authenticate } from "./modules/auth.mjs";
 
 const router = express.Router();
 
-function hexInc(hex) {
-    const num = BigInt("0x" + hex);
-    return (num + BigInt(1)).toString(16);
-}
-
 router.post("/init", async function (req, res, _next) {
     const email = req.body.email;
     if (!email) {

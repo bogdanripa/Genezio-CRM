@@ -115,14 +115,14 @@ async function callApi(tool_name, input) {
     if (!tool) throw new Error(`Tool ${tool_name} not found`);
   }
   let { path, method, addSecret } = tool;
-  const baseUrl = swaggerSpec.servers?.[0]?.url || process.env.CRM_URL;
+  const baseUrl = process.env.CRM_URL;
   const queryParams = {};
   for (const key in input) {
     if (path.includes(`{${key}}`)) {
       path = path.replace(`{${key}}`, encodeURIComponent(input[key]));
       delete input[key]; // Remove the key from input as it's already used in the path
     }
-    if (tool.function.parameters.properties[key] && tool.function.parameters.properties[key].in === 'query') {
+    if (tool.inputSchema.properties[key] && tool.inputSchema.properties[key].in === 'query') {
       queryParams[key] = input[key];
       delete input[key]; // Remove the key from input as it's already used in the query
     }
