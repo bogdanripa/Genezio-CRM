@@ -108,59 +108,6 @@ function loadTools(swaggerSpec) {
   return tools;
 }
 
-async function callApi(tool_name, input) {
-  let tool = tools.find(t => t.function.name === tool_name);
-  if (!tool) {
-    tool = authTools.find(t => t.function.name === tool_name);
-    if (!tool) throw new Error(`Tool ${tool_name} not found`);
-  }
-  let { path, method, addSecret } = tool;
-  const baseUrl = process.env.CRM_URL;
-  const queryParams = {};
-  for (const key in input) {
-    if (path.includes(`{${key}}`)) {
-      path = path.replace(`{${key}}`, encodeURIComponent(input[key]));
-      delete input[key]; // Remove the key from input as it's already used in the path
-    }
-    if (tool.inputSchema.properties[key] && tool.inputSchema.properties[key].in === 'query') {
-      queryParams[key] = input[key];
-      delete input[key]; // Remove the key from input as it's already used in the query
-    }
-  }
-  const queryString = new URLSearchParams(queryParams).toString();
-
-  let fullUrl = `${baseUrl}${path}`;
-  if (queryString)
-    fullUrl += `?${queryString}`;
-
-  console.log(`${method} ${fullUrl}`);
-
-  if (addSecret) input.secret = process.env.EMAIL_CODE_AUTH_SECRET;
-
-  const body = Object.keys(input).length > 0 ? JSON.stringify(input, null, 2) : undefined;
-
-  if (body) {
-    console.log(`Body: ${body}`); // Log first 100 chars for brevity
-  }
-
-  const response = await fetch(fullUrl, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${crmToken}`
-    },
-    body
-  });
-
-  const data = await response.text();
-  console.log(`Response: ${response.status} - ${data.substring(0, 50)}...`); // Log first 100 chars for brevity
-  if (!response.ok) {
-    return `Error: ${response.statusText} - ${data}`;
-  }
-
-  return data;
-}
-
 function setCRMToken(token) {
   crmToken = token;
 }
@@ -220,4 +167,4 @@ const authTools = [
   }
 ]
 
-export {authTools, setCRMToken, callApi, loadTools};
+export {authTools, setCRMToken, loadTools};

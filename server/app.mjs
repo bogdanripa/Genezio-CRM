@@ -1,13 +1,8 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { JSONRPCServer } from "json-rpc-2.0";
-import swaggerJSDoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express';
-import mongooseToSwagger from 'mongoose-to-swagger';
 
-import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem } from "./db.mjs";
-import emailAuth from './emailCodeAuth.mjs';
+import { Users, Accounts} from "./db.mjs";
 import {processAllAccounts} from "./cron.mjs";
 import * as userModule from "./modules/users.mjs";
 import * as accountModule from "./modules/accounts.mjs";
@@ -17,7 +12,17 @@ import * as cotactsModule from './modules/contacts.mjs';
 import * as interactionModule from "./modules/interactions.mjs";
 import * as exploreModule from "./modules/explore.mjs";
 import { checkAuth } from "./modules/auth.mjs";
-import { loadTools } from "./tools.mjs";
+import emailAuthRouter from './emailCodeAuth.mjs';
+import {swaggerRouter, loadSwagger} from './modules/swagger.mjs'
+import { loadMCPTools, mcpRouter } from "./modules/mcp.mjs";
+
+const app = express();
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.json());
+app.use('/auth/email-code', emailAuthRouter);
+app.use('/docs', swaggerRouter);
 
 const toolsMap = {
   ...userModule,
@@ -28,180 +33,8 @@ const toolsMap = {
   ...interactionModule,
   ...exploreModule
 }
-
-let swaggerSpec = null;
-
-function loadSwagger() {
-  if (swaggerSpec) return;
-  const swaggerDefinition = {
-    openapi: '3.0.0',
-    info: {
-      title: 'Genezio CRM APIs',
-      version: '1.0.0',
-      description: 'OpenAPI spec for Genezio CRM APIs',
-    },
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT', // optional
-        },
-      },
-      schemas: {
-        // all your schemas here
-      },
-    },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
-  };
-  
-  function addIdToSchema(schema) {
-    if (!schema.properties.id) {
-      schema.properties.id = { type: 'string' };
-      if (!schema.required) {
-        schema.required = [];
-      }
-      schema.required.push('id');
-    }
-    schema = cleanSchema(schema);
-    return schema;
-  }
-  
-  function cleanSchema(schema) {
-    if (schema.properties._id) {
-      delete schema.properties._id;
-      if (schema.required && schema.required.includes('_id')) {
-        schema.required = schema.required.filter((field) => field !== '_id');
-      }
-    }
-    return schema;
-  }
-  
-  function addSwaggerSchemas() {
-    const accountSchema = addIdToSchema(mongooseToSwagger(Accounts));
-    const userSummarySchema = addIdToSchema(mongooseToSwagger(UserSummary));
-    const employeeSchema = addIdToSchema(mongooseToSwagger(Employee));
-    const basicInteractionSchema = mongooseToSwagger(BasicInteraction);
-    const interactionSchema = addIdToSchema(mongooseToSwagger(Interaction));
-    const actionItemSchema = cleanSchema(mongooseToSwagger(ActionItem));
-    
-    swaggerDefinition.components.schemas = {
-      Account: accountSchema,
-      UserSummary: userSummarySchema,
-      Employee: employeeSchema,
-      BasicInteraction: basicInteractionSchema,
-      Interaction: interactionSchema,
-      ActionItem: actionItemSchema,
-    };
-  }
-  
-  addSwaggerSchemas();
-  const options = {
-    swaggerDefinition,
-    apis: ['./app.mjs'], // adjust paths to where your JSDoc comments are
-  };
-  
-  swaggerSpec = swaggerJSDoc(options);
-}
-
-const app = express();
-
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.json());
-app.use('/auth/email-code', emailAuth);
-
-//////////////////////////////////////////////////////////////////////////////////////////
-
-const rpc = new JSONRPCServer();
-rpc.addMethod("initialize", ({ protocolVersion, clientInfo }) => ({
-  protocolVersion,
-  capabilities: { tools: {} },
-  serverInfo: { name: "MyMCPServer", version: "1.0.0" },
-}));
-
-// Notify client ready
-rpc.addMethod("notifications/initialized", () => null);
-
-let tools = [];
-// 2️⃣ tools/list (tool discovery)
-rpc.addMethod("tools/list", function () {
-  if (tools.length == 0) {
-    loadSwagger();
-    tools = loadTools(swaggerSpec);
-  }
-  return {
-    tools
-  }
-});
-
-function httpStatusToJsonRpcErrorCode(status) {
-  if (status >= 500) {
-      return -32099; // Internal Server Error
-  }
-  switch (status) {
-      case 400: return -32000; // Bad Request
-      case 401: return -32001; // Unauthorized
-      case 402: return -32002; // Payment Required (rare)
-      case 403: return -32003; // Forbidden
-      case 404: return -32004; // Not Found
-      case 405: return -32005; // Method Not Allowed
-      case 408: return -32008; // Request Timeout
-      case 409: return -32009; // Conflict
-      case 410: return -32010; // Gone
-      case 429: return -32029; // Too Many Requests
-      default:
-          if (status >= 400 && status < 500) {
-              return -32040; // Generic client error
-          }
-          return -32099; // Generic server error
-  }
-}
-// 3️⃣ tools/call (invoke a tool)
-rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
-  if (tools.length === 0) {
-      loadSwagger();
-      tools = loadTools(swaggerSpec);
-  }
-
-  const toolObj = tools.find(tool => tool.name === name);
-
-  if (!toolObj || !toolsMap[name]) {
-      throw {
-          code: -32601,
-          message: `Tool not found: ${name}`
-      };
-  }
-
-  try {
-      args = args ?? {};
-      const result = await toolsMap[name](args);
-      return result;
-  } catch (err) {
-      console.error(`tools/call error in ${name}:`, err);
-      throw {
-          code: httpStatusToJsonRpcErrorCode(err.status || 500),
-          message: err.message || "Internal Server Error"
-      };
-  }
-});
-
-app.post("/mcp", checkAuth, async (req, res) => {
-  const json = req.body;
-  if (!json.params) json.params = {};
-  if (!json.params.arguments) json.params.arguments = {};
-  json.params.arguments.userInfo = req.userInfo;
-
-  const response = await rpc.receive(json);
-  if (response) res.json(response);
-  else res.sendStatus(204);
-});
-
-//////////////////////////////////////////////////////////////////////////////////////////
+loadMCPTools(toolsMap);
+app.use('/mcp', checkAuth, mcpRouter)
 
 /**
  * @openapi
@@ -1303,8 +1136,6 @@ app.post('/cron', async (req, res) => {
   await Promise.all(promises);
   res.send("Cron job executed successfully");
 });
-
-app.use('/docs', loadSwagger, swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.listen(8080, () => {
   console.log(
