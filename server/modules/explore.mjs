@@ -76,7 +76,7 @@ function findOneTerm(term, accounts) {
     return results;
   }
 
-export async function findByName(userInfo, { name }) {
+export async function findByName({ userInfo, name }) {
     const terms = name.trim().split(/\s+/);
     const accounts = await getAllAccounts(userInfo);
   

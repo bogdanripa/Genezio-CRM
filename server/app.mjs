@@ -1,20 +1,33 @@
 import express from "express";
+import bodyParser from "body-parser";
 import cors from "cors";
-import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem } from "./db.mjs";
+import { JSONRPCServer } from "json-rpc-2.0";
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import mongooseToSwagger from 'mongoose-to-swagger';
+
+import { Users, Accounts, UserSummary, Employee, BasicInteraction, Interaction, ActionItem } from "./db.mjs";
 import emailAuth from './emailCodeAuth.mjs';
 import {processAllAccounts} from "./cron.mjs";
-
-import { getAllUsers } from "./modules/users.mjs";
-import { getAllAccountsSummary, getAccountDetails, createAccount, updateAccount, deleteAccount, transferOwnership } from "./modules/accounts.mjs";
-import { addActionItem, updateActionItem, completeActionItem } from "./modules/actionItems.mjs";
-import { getAllTeamMembersOnAccount, addTeamMember, removeTeamMember } from "./modules/teamMembers.mjs"
-import { addContact, updateContact, removeContact } from './modules/contacts.mjs';
-import { getLatestInteractions, addInteraction, updateInteraction, deleteInteraction, unstickInteraction } from "./modules/interactions.mjs";
-import { findByName } from "./modules/explore.mjs";
+import * as userModule from "./modules/users.mjs";
+import * as accountModule from "./modules/accounts.mjs";
+import * as actionItemsModule from "./modules/actionItems.mjs";
+import * as teamMembersModule from "./modules/teamMembers.mjs";
+import * as cotactsModule from './modules/contacts.mjs';
+import * as interactionModule from "./modules/interactions.mjs";
+import * as exploreModule from "./modules/explore.mjs";
 import { checkAuth } from "./modules/auth.mjs";
+import { loadTools } from "./tools.mjs";
+
+const toolsMap = {
+  ...userModule,
+  ...accountModule,
+  ...actionItemsModule,
+  ...teamMembersModule,
+  ...cotactsModule,
+  ...interactionModule,
+  ...exploreModule
+}
 
 let swaggerSpec = null;
 
@@ -45,7 +58,7 @@ function loadSwagger() {
       },
     ],
   };
-
+  
   function addIdToSchema(schema) {
     if (!schema.properties.id) {
       schema.properties.id = { type: 'string' };
@@ -57,7 +70,7 @@ function loadSwagger() {
     schema = cleanSchema(schema);
     return schema;
   }
-
+  
   function cleanSchema(schema) {
     if (schema.properties._id) {
       delete schema.properties._id;
@@ -67,7 +80,7 @@ function loadSwagger() {
     }
     return schema;
   }
-
+  
   function addSwaggerSchemas() {
     const accountSchema = addIdToSchema(mongooseToSwagger(Accounts));
     const userSummarySchema = addIdToSchema(mongooseToSwagger(UserSummary));
@@ -75,7 +88,7 @@ function loadSwagger() {
     const basicInteractionSchema = mongooseToSwagger(BasicInteraction);
     const interactionSchema = addIdToSchema(mongooseToSwagger(Interaction));
     const actionItemSchema = cleanSchema(mongooseToSwagger(ActionItem));
-
+    
     swaggerDefinition.components.schemas = {
       Account: accountSchema,
       UserSummary: userSummarySchema,
@@ -85,7 +98,7 @@ function loadSwagger() {
       ActionItem: actionItemSchema,
     };
   }
-
+  
   addSwaggerSchemas();
   const options = {
     swaggerDefinition,
@@ -98,8 +111,97 @@ function loadSwagger() {
 const app = express();
 
 app.use(cors());
+app.use(bodyParser.json());
 app.use(express.json());
 app.use('/auth/email-code', emailAuth);
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+const rpc = new JSONRPCServer();
+rpc.addMethod("initialize", ({ protocolVersion, clientInfo }) => ({
+  protocolVersion,
+  capabilities: { tools: {} },
+  serverInfo: { name: "MyMCPServer", version: "1.0.0" },
+}));
+
+// Notify client ready
+rpc.addMethod("notifications/initialized", () => null);
+
+let tools = [];
+// 2️⃣ tools/list (tool discovery)
+rpc.addMethod("tools/list", function () {
+  if (tools.length == 0) {
+    loadSwagger();
+    tools = loadTools(swaggerSpec);
+  }
+  return {
+    tools
+  }
+});
+
+function httpStatusToJsonRpcErrorCode(status) {
+  if (status >= 500) {
+      return -32099; // Internal Server Error
+  }
+  switch (status) {
+      case 400: return -32000; // Bad Request
+      case 401: return -32001; // Unauthorized
+      case 402: return -32002; // Payment Required (rare)
+      case 403: return -32003; // Forbidden
+      case 404: return -32004; // Not Found
+      case 405: return -32005; // Method Not Allowed
+      case 408: return -32008; // Request Timeout
+      case 409: return -32009; // Conflict
+      case 410: return -32010; // Gone
+      case 429: return -32029; // Too Many Requests
+      default:
+          if (status >= 400 && status < 500) {
+              return -32040; // Generic client error
+          }
+          return -32099; // Generic server error
+  }
+}
+// 3️⃣ tools/call (invoke a tool)
+rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
+  if (tools.length === 0) {
+      loadSwagger();
+      tools = loadTools(swaggerSpec);
+  }
+
+  const toolObj = tools.find(tool => tool.name === name);
+
+  if (!toolObj || !toolsMap[name]) {
+      throw {
+          code: -32601,
+          message: `Tool not found: ${name}`
+      };
+  }
+
+  try {
+      args = args ?? {};
+      const result = await toolsMap[name](args);
+      return result;
+  } catch (err) {
+      console.error(`tools/call error in ${name}:`, err);
+      throw {
+          code: httpStatusToJsonRpcErrorCode(err.status || 500),
+          message: err.message || "Internal Server Error"
+      };
+  }
+});
+
+app.post("/mcp", checkAuth, async (req, res) => {
+  const json = req.body;
+  if (!json.params) json.params = {};
+  if (!json.params.arguments) json.params.arguments = {};
+  json.params.arguments.userInfo = req.userInfo;
+
+  const response = await rpc.receive(json);
+  if (response) res.json(response);
+  else res.sendStatus(204);
+});
+
+//////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @openapi
@@ -107,6 +209,7 @@ app.use('/auth/email-code', emailAuth);
  *   get:
  *     summary: Get all users (colleagues) from my organization
  *     tags: [Users]
+ *     operationId: getAllUsers
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -131,7 +234,7 @@ app.use('/auth/email-code', emailAuth);
  */
 app.get("/users", checkAuth, async function (req, res) {
   try {
-    const users = await getAllUsers(req.userInfo);
+    const users = await userModule.getAllUsers({ userInfo: req.userInfo });
     res.send(users);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -142,6 +245,7 @@ app.get("/users", checkAuth, async function (req, res) {
  * @openapi
  * /accounts:
  *   get:
+ *     operationId: getAllAccountsSummary
  *     summary: Get all accounts from my organization, including account_id, name, industry, status, description, owner, accountType, numberOfTeamMembers, numberOfContacts, numberOfInteractions, lastInteractionDate, updatedAt
  *     tags: [Accounts]
  *     security:
@@ -158,7 +262,7 @@ app.get("/users", checkAuth, async function (req, res) {
  */
 app.get("/accounts/", checkAuth, async function (req, res) {
   try {
-    const accountsSummary = await getAllAccountsSummary(req.userInfo);
+    const accountsSummary = await accountModule.getAllAccountsSummary({ userInfo: req.userInfo });
     res.send(accountsSummary);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -168,6 +272,7 @@ app.get("/accounts/", checkAuth, async function (req, res) {
  * @openapi
  * /accounts/{account_id}:
  *   get:
+ *     operationId: getAccountDetails
  *     summary: Get account details by account_id, including all interactions (meeting notes, calls, etc), action items, team members, and contacts
  *     tags: [Accounts]
  *     parameters:
@@ -191,7 +296,7 @@ app.get("/accounts/", checkAuth, async function (req, res) {
  */
 app.get("/accounts/:account_id", checkAuth, async function(req, res) {
   try {
-    const accountDetails = await getAccountDetails(req.userInfo, { account_id: req.params.account_id });
+    const accountDetails = await accountModule.getAccountDetails({ userInfo: req.userInfo, account_id: req.params.account_id });
     res.send(accountDetails);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -202,6 +307,7 @@ app.get("/accounts/:account_id", checkAuth, async function(req, res) {
  * @openapi
  * /accounts:
  *   post:
+ *     operationId: createAccount
  *     summary: Create a new account
  *     tags: [Accounts]
  *     security:
@@ -262,7 +368,8 @@ app.get("/accounts/:account_id", checkAuth, async function(req, res) {
  */
 app.post("/accounts", checkAuth, async function (req, res) {
   try {
-    const account = await createAccount(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const account = await accountModule.createAccount(req.body);
     res.status(201).send(account);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -273,6 +380,7 @@ app.post("/accounts", checkAuth, async function (req, res) {
  * @openapi
  * /accounts/{account_id}:
  *   put:
+ *     operationId: updateAccount
  *     summary: Update an account by account_id. Call this only if you need to update an existing account. None of the fields except for the account id are required.
  *     tags: [Accounts]
  *     security:
@@ -338,7 +446,8 @@ app.post("/accounts", checkAuth, async function (req, res) {
 app.put("/accounts/:account_id", checkAuth, async function (req, res) {
   req.body.account_id = req.params.account_id;
   try {
-    const account = await updateAccount(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const account = await accountModule.updateAccount(req.body);
     res.status(200).send(account);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -349,6 +458,7 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res) {
  * @openapi 
  * /accounts/{account_id}:
  *   delete:
+ *     operationId: deleteAccount
  *     summary: Delete an account by account_id
  *     tags: [Accounts]
  *     security:
@@ -368,7 +478,7 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res) {
  */
 app.delete("/accounts/:account_id", checkAuth, async function (req, res) {
   try {
-    await deleteAccount(req.userInfo, { account_id: req.params.account_id });
+    await accountModule.deleteAccount({ userInfo: req.userInfo, account_id: req.params.account_id });
     res.status(204).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -379,6 +489,7 @@ app.delete("/accounts/:account_id", checkAuth, async function (req, res) {
  * @openapi
  * /accounts/{account_id}/teamMembers:
  *   get:
+ *     operationId: getAllTeamMembersOnAccount
  *     summary: Gets the list of team members on an existing account
  *     tags: [Account Team Members]
  *     description: Gets the list of team members - including the account owner - on a specified account, identified by its account_id.
@@ -413,7 +524,7 @@ app.delete("/accounts/:account_id", checkAuth, async function (req, res) {
  */
 app.get("/accounts/:account_id/teamMembers", checkAuth, async function (req, res) {
   try {
-    const teamMembers = await getAllTeamMembersOnAccount(req.userInfo, req.params.account_id);
+    const teamMembers = await teamMembersModule.getAllTeamMembersOnAccount(req.userInfo, req.params.account_id);
     res.send(teamMembers);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -424,6 +535,7 @@ app.get("/accounts/:account_id/teamMembers", checkAuth, async function (req, res
  * @openapi
  * /accounts/{account_id}/teamMembers:
  *   post:
+ *     operationId: addTeamMember
  *     summary: Add a team member to an existing account, identified by its account_id
  *     tags: [Account Team Members]
  *     description: Adds a user as a team member to the specified account. The user must already exist in the system.
@@ -462,7 +574,7 @@ app.get("/accounts/:account_id/teamMembers", checkAuth, async function (req, res
  */
 app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, res) {
   try {
-    const teamMember = await addTeamMember(req.userInfo, { account_id: req.params.account_id, id: req.body.id });
+    const teamMember = await teamMembersModule.addTeamMember({ userInfo: req.userInfo, account_id: req.params.account_id, id: req.body.id });
     res.status(201).send(teamMember);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -473,6 +585,7 @@ app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, re
  * @openapi
  * /accounts/{account_id}/teamMembers/{team_member_id}:
  *   delete:
+ *     operationId: removeTeamMember
  *     summary: Remove a team member from an account
  *     tags: [Account Team Members]
  *     description: Deletes a user from the team members list of the specified account.
@@ -501,7 +614,7 @@ app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, re
  */
 app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async function (req, res) {
   try {
-    await removeTeamMember(req.userInfo, { account_id: req.params.account_id, team_member_id: req.params.team_member_id });
+    await teamMembersModule.removeTeamMember({ userInfo: req.userInfo, account_id: req.params.account_id, team_member_id: req.params.team_member_id });
     res.status(204).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -512,6 +625,7 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
  * @openapi
  * /accounts/{account_id}/transferOwnership:
  *   put:
+ *     operationId: transferOwnership
  *     summary: Transfers ownership of an account to another user. Call this only if you need to transfer ownership of an existing account.
  *     tags: [Account Team Members]
  *     description: Transfers ownership of an account to another user. Call this only if you need to transfer ownership of an existing account.
@@ -546,7 +660,7 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
  */
 app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (req, res) {
   try {
-    await transferOwnership(req.userInfo, {account_id: req.params.account_id, id: req.params.id});
+    await accountModule.transferOwnership({ userInfo: req.userInfo, account_id: req.params.account_id, id: req.params.id});
     res.status(204).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -557,6 +671,7 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
  * @openapi
  * /accounts/{account_id}/contacts:
  *   post:
+ *     operationId: addContact
  *     summary: Add a contact to an account
  *     tags: [Account Contacts]
  *     description: Adds a new contact (employee) to the specified account. Contact name and role are required fields.
@@ -581,8 +696,10 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
  *             properties:
  *               name:
  *                 type: string
+ *                 description: The name of the contact
  *               role:
  *                 type: string
+ *                 description: The contact's role in the company
  *               email:
  *                 type: string
  *                 format: email
@@ -590,6 +707,7 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
  *                 type: string
  *               notes:
  *                 type: string
+ *                 description: Notes you might have on the contact
  *     responses:
  *       201:
  *         description: Contact added successfully
@@ -608,7 +726,8 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res) 
   }
   try {
     req.body.account_id = req.params.account_id;
-    const contact = await addContact(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const contact = await cotactsModule.addContact(req.body);
     res.status(201).send(contact);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -619,6 +738,7 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res) 
  * @openapi
  * /accounts/{account_id}/contacts/{contact_id}:
  *   put:
+ *     operationId: updateContact
  *     summary: Update an existing contact
  *     tags: [Account Contacts]
  *     description: Updates the contact (employee) details associated with the specified account. The account and countact IDs are the only required fields.
@@ -671,7 +791,8 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
   try {
     req.body.account_id = req.params.account_id;
     req.body.contact_id = req.params.contact_id;
-    const contact = await updateContact(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const contact = await cotactsModule.updateContact(req.body);
     res.send(contact);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -682,6 +803,7 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
  * @openapi
  * /accounts/{account_id}/contacts/{contact_id}:
  *   delete:
+ *     operationId: removeContact
  *     summary: Delete a contact from an account
  *     tags: [Account Contacts]
  *     description: Removes an existing contact (employee) from the specified account.
@@ -712,7 +834,8 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
   try {
     req.body.account_id = req.params.account_id;
     req.body.contact_id = req.params.contact_id;
-    await removeContact(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    await cotactsModule.removeContact(req.body);
     res.status(204).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -723,6 +846,7 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
  * @openapi
  * /accounts/{account_id}/interactions:
  *   post:
+ *     operationId: addInteraction
  *     summary: Create a new interaction
  *     tags: [Account Interactions]
  *     description: Adds a new interaction to the specified account.
@@ -756,7 +880,8 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
 app.post("/accounts/:account_id/interactions", checkAuth, async function (req, res) {
   try {
     req.body.account_id = req.params.account_id;
-    const interaction = await addInteraction(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const interaction = await interactionModule.addInteraction(req.body);
     res.status(201).send(interaction);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -767,6 +892,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
  * @openapi
  * /accounts/{account_id}/interactions/{interaction_id}:
  *   put:
+ *     operationId: updateInteraction
  *     summary: Update an existing interaction
  *     tags: [Account Interactions]
  *     description: Updates the details of an existing interaction within the specified account. None of the fields except for the interaction id are required.
@@ -807,7 +933,8 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
   try {
     req.body.account_id = req.params.account_id;
     req.body.interaction_id = req.params.interaction_id;
-    const interaction = await updateInteraction(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const interaction = await interactionModule.updateInteraction(req.body);
     res.send(interaction);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -818,6 +945,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
  * @openapi
  * /accounts/{account_id}/interactions/{interaction_id}:
  *   delete:
+ *     operationId: deleteInteraction
  *     summary: Delete an interaction
  *     tags: [Account Interactions]
  *     description: Removes an interaction from the specified account.
@@ -848,7 +976,8 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
   try {
     req.body.account_id = req.params.account_id;
     req.body.interaction_id = req.params.interaction_id;
-    await deleteInteraction(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    await interactionModule.deleteInteraction(req.body);
     res.status(204).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -859,6 +988,7 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
  * @openapi
  * /accounts/{account_id}/actionItems/:
  *   post:
+ *     operationId: addActionItem
  *     summary: Adds an action item
  *     tags: [Account Action Items]
  *     description: Adds an action item to an account. Title and due date are required fields. Optionally, you can assign the action item to a team member.
@@ -911,7 +1041,8 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
   }
   try {
     req.body.account_id = req.params.account_id;
-    const actionItem = await addActionItem(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const actionItem = await actionItemsModule.addActionItem(req.body);
     res.status(201).send(actionItem);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -922,6 +1053,7 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
  * @openapi
  * /accounts/{account_id}/actionItems/{action_item_id}:
  *   put:
+ *     operationId: updateActionItem
  *     summary: Update an action item
  *     tags: [Account Action Items]
  *     description: Updates the fields of a specific action item.
@@ -975,7 +1107,8 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
   try {
     req.body.account_id = req.params.account_id;
     req.body.action_item_id = req.params.action_item_id;
-    const actionItem = await updateActionItem(req.userInfo, req.body);
+    req.body.userInfo = req.userInfo;
+    const actionItem = await actionItemsModule.updateActionItem(req.body);
     res.send(actionItem);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -986,6 +1119,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
  * @openapi
  * /accounts/{account_id}/actionItems/{action_item_id}/complete:
  *   put:
+ *     operationId: completeActionItem
  *     summary: Completes an action item
  *     tags: [Account Action Items]
  *     description: Completes a specific action item.
@@ -1018,7 +1152,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
  */
 app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth, async function (req, res) {
   try {
-    const actionItem = await completeActionItem(req.userInfo, { account_id: req.params.account_id, action_item_id: req.params.action_item_id});
+    const actionItem = await actionItemsModule.completeActionItem({ userInfo: req.userInfo, account_id: req.params.account_id, action_item_id: req.params.action_item_id});
     res.send(actionItem);
   } catch (e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -1029,6 +1163,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth,
  * @openapi
  * /accounts/{account_id}/interactions/{interaction_id}/unstick:
  *   put:
+ *     operationId: unstickInteraction
  *     summary: Unstick an interaction (this was most likely a sticky note)
  *     tags: [Account Interactions]
  *     description: Sets the `isSticky` flag of the specified interaction to `false`.
@@ -1061,7 +1196,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth,
  */
 app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth, async function (req, res) {
   try {
-    const interaction = await unstickInteraction(req.userInfo, { account_id: req.params.account_id, interaction_id: req.params.interaction_id });
+    const interaction = await interactionModule.unstickInteraction({ userInfo: req.userInfo, account_id: req.params.account_id, interaction_id: req.params.interaction_id });
     res.send(interaction);
   } catch (e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -1072,6 +1207,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth,
  * @openapi
  * /interactions/latest:
  *   get:
+ *     operationId: getLatestInteractions
  *     summary: Get latest interactions across all accounts
  *     tags: [Accounts]
  *     description: Returns a list of recent interactions across all accounts, including the creator, type, account name, and creation time.
@@ -1100,7 +1236,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth,
  */
 app.get("/interactions/latest", checkAuth, async function (req, res) {
   try {
-    const latestInteractions = await getLatestInteractions(req.userInfo);
+    const latestInteractions = await interactionModule.getLatestInteractions({ userInfo: req.userInfo });
     res.send(latestInteractions);
   } catch (e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
@@ -1111,6 +1247,7 @@ app.get("/interactions/latest", checkAuth, async function (req, res) {
  * @openapi
  * /find:
  *   get:
+ *     operationId: findByName
  *     summary: Find accounts, contacts, team members, interactions, and action items by name
  *     tags: [Accounts]
  *     description: Free text search for accounts, contacts, team members, interactions, and action items by name.
@@ -1130,7 +1267,7 @@ app.get("/find", checkAuth, async function (req, res) {
     return res.status(400).send("Query parameter 'name' is required");
   }
   try {
-    const results = await findByName(req.userInfo, { name });  
+    const results = await exploreModule.findByName({ userInfo: req.userInfo, name });  
     res.send(results);
   } catch (e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");

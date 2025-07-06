@@ -1,7 +1,8 @@
 import { getAccount, getAllAccounts } from "./accounts.mjs";
 import { sendNotification } from "./notifications.mjs";
 
-export async function addContact(userInfo, parameters) {  
+export async function addContact(parameters) {  
+    const userInfo = parameters.userInfo;
     const accountId = parameters.account_id;
     const account = await getAccount(userInfo, accountId);
     if (!account) {
@@ -29,7 +30,8 @@ export async function addContact(userInfo, parameters) {
     return newContact;
 }
 
-export async function updateContact(userInfo, parameters) {
+export async function updateContact(parameters) {
+    const userInfo = parameters.userInfo;
     const accountId = parameters.account_id;
     const contactId = parameters.contact_id;
     const account = await getAccount(userInfo, accountId);
@@ -59,7 +61,8 @@ export async function updateContact(userInfo, parameters) {
     return contact;
 }
 
-export async function removeContact(userInfo, parameters) {
+export async function removeContact(parameters) {
+    const userInfo = parameters.userInfo;
     const accountId = parameters.account_id;
     const contactId = parameters.contact_id;
     const account = await getAccount(userInfo, accountId);

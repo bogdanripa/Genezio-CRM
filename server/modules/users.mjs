@@ -1,6 +1,6 @@
 import { Users } from "../db.mjs";
 
-export async function getAllUsers(userInfo) {
+export async function getAllUsers({ userInfo }) {
     const address = userInfo.address;
     const users = await Users.find({address}).lean();
     if (users) {
