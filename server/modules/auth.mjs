@@ -37,6 +37,10 @@ function generate8DigitCode() {
 }
 
 export async function initAuth({ email }) {
+  if (!email) {
+    throw {status: 401, message: "The user's email is required in the initAuth call."}
+  }
+
   const user = await Users.findOne({ email: email });
   if (!user) {
       throw { status: 404, message: "Could not identify you by email. You need to create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate." };
@@ -76,6 +80,9 @@ async function getToken(userId) {
 }
 
 export async function authenticate({ email, phone, authCode }) {
+  if (!email || !authCode) {
+    throw {status: 401, message: "The user's email and authCode are both required in the authenticate call."}
+  }
   const user = await Users.findOne({ email });
   if (!user) {
     throw {status: 404, message: "User's email was not found. They can create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate."};

@@ -856,6 +856,7 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", authModule.chec
  *                 properties:
  *                   id:
  *                     type: string
+ *                     description: The team member id
  *     responses:
  *       200:
  *         description: Action item added successfully
