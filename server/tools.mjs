@@ -51,15 +51,13 @@ function loadTools(swaggerSpec) {
       if (parameters.length > 0) {
         shape.type = "object";
         for (const param of parameters) {
-          if (!param.name || !param.in) continue;
+          if (!param.name) continue;
           const paramSchema = param.schema || { type: "string" };
           shape.properties[param.name] = paramSchema;
           if (param.description)
             shape.properties[param.name].description = param.description;
           if (param.required)
             shape.required.push(param.name);
-          if (param.in)
-            shape.properties[param.name].in = param.in;
         }
       }
 
