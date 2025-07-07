@@ -35,7 +35,7 @@ rpc.addMethod("tools/list", function ({ name, arguments: args }) {
         }
     } else {
         return  {
-            authTools
+            tools: authTools
         }
     }
 });
