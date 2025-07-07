@@ -11,7 +11,7 @@ import * as teamMembersModule from "./modules/teamMembers.mjs";
 import * as cotactsModule from './modules/contacts.mjs';
 import * as interactionModule from "./modules/interactions.mjs";
 import * as exploreModule from "./modules/explore.mjs";
-import { checkAuth } from "./modules/auth.mjs";
+import * as authModule from "./modules/auth.mjs";
 import emailAuthRouter from './emailCodeAuth.mjs';
 import {swaggerRouter, loadSwagger} from './modules/swagger.mjs'
 import { loadMCPTools, mcpRouter } from "./modules/mcp.mjs";
@@ -25,6 +25,7 @@ app.use('/auth/email-code', emailAuthRouter);
 app.use('/docs', swaggerRouter);
 
 const toolsMap = {
+  ...authModule,
   ...userModule,
   ...accountModule,
   ...actionItemsModule,
@@ -34,8 +35,7 @@ const toolsMap = {
   ...exploreModule
 }
 loadMCPTools(toolsMap);
-app.use('/mcp', checkAuth, mcpRouter)
-
+app.use('/mcp', mcpRouter)
 /**
  * @openapi
  * /users:
@@ -65,7 +65,7 @@ app.use('/mcp', checkAuth, mcpRouter)
  *                   address:
  *                     type: string
  */
-app.get("/users", checkAuth, async function (req, res) {
+app.get("/users", authModule.checkAuth, async function (req, res) {
   try {
     const users = await userModule.getAllUsers({ userInfo: req.userInfo });
     res.send(users);
@@ -93,7 +93,7 @@ app.get("/users", checkAuth, async function (req, res) {
  *               items:
  *                 $ref: '#/components/schemas/Account'
  */
-app.get("/accounts/", checkAuth, async function (req, res) {
+app.get("/accounts/", authModule.checkAuth, async function (req, res) {
   try {
     const accountsSummary = await accountModule.getAllAccountsSummary({ userInfo: req.userInfo });
     res.send(accountsSummary);
@@ -127,7 +127,7 @@ app.get("/accounts/", checkAuth, async function (req, res) {
  *       404:
  *         description: Account not found
  */
-app.get("/accounts/:account_id", checkAuth, async function(req, res) {
+app.get("/accounts/:account_id", authModule.checkAuth, async function(req, res) {
   try {
     const accountDetails = await accountModule.getAccountDetails({ userInfo: req.userInfo, account_id: req.params.account_id });
     res.send(accountDetails);
@@ -199,7 +199,7 @@ app.get("/accounts/:account_id", checkAuth, async function(req, res) {
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts", checkAuth, async function (req, res) {
+app.post("/accounts", authModule.checkAuth, async function (req, res) {
   try {
     req.body.userInfo = req.userInfo;
     const account = await accountModule.createAccount(req.body);
@@ -276,7 +276,7 @@ app.post("/accounts", checkAuth, async function (req, res) {
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id", checkAuth, async function (req, res) {
+app.put("/accounts/:account_id", authModule.checkAuth, async function (req, res) {
   req.body.account_id = req.params.account_id;
   try {
     req.body.userInfo = req.userInfo;
@@ -309,7 +309,7 @@ app.put("/accounts/:account_id", checkAuth, async function (req, res) {
  *       404:
  *         description: Account not found
  */
-app.delete("/accounts/:account_id", checkAuth, async function (req, res) {
+app.delete("/accounts/:account_id", authModule.checkAuth, async function (req, res) {
   try {
     await accountModule.deleteAccount({ userInfo: req.userInfo, account_id: req.params.account_id });
     res.status(204).send();
@@ -355,7 +355,7 @@ app.delete("/accounts/:account_id", checkAuth, async function (req, res) {
  *       401:
  *         description: Unauthorized
  */
-app.get("/accounts/:account_id/teamMembers", checkAuth, async function (req, res) {
+app.get("/accounts/:account_id/teamMembers", authModule.checkAuth, async function (req, res) {
   try {
     const teamMembers = await teamMembersModule.getAllTeamMembersOnAccount(req.userInfo, req.params.account_id);
     res.send(teamMembers);
@@ -405,7 +405,7 @@ app.get("/accounts/:account_id/teamMembers", checkAuth, async function (req, res
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, res) {
+app.post("/accounts/:account_id/teamMembers", authModule.checkAuth, async function (req, res) {
   try {
     const teamMember = await teamMembersModule.addTeamMember({ userInfo: req.userInfo, account_id: req.params.account_id, id: req.body.id });
     res.status(201).send(teamMember);
@@ -445,7 +445,7 @@ app.post("/accounts/:account_id/teamMembers", checkAuth, async function (req, re
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async function (req, res) {
+app.delete("/accounts/:account_id/teamMembers/:team_member_id", authModule.checkAuth, async function (req, res) {
   try {
     await teamMembersModule.removeTeamMember({ userInfo: req.userInfo, account_id: req.params.account_id, team_member_id: req.params.team_member_id });
     res.status(204).send();
@@ -491,7 +491,7 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", checkAuth, async
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (req, res) {
+app.put("/accounts/:account_id/transferOwnership", authModule.checkAuth, async function (req, res) {
   try {
     await accountModule.transferOwnership({ userInfo: req.userInfo, account_id: req.params.account_id, id: req.body.id});
     res.status(204).send();
@@ -553,7 +553,7 @@ app.put("/accounts/:account_id/transferOwnership", checkAuth, async function (re
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res) {
+app.post("/accounts/:account_id/contacts", authModule.checkAuth, async function (req, res) {
   if (!req.body.name || !req.body.role) {
     return res.status(400).send("Name and role are required fields.");
   }
@@ -620,7 +620,7 @@ app.post("/accounts/:account_id/contacts", checkAuth, async function (req, res) 
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res) {
+app.put("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, async function (req, res) {
   try {
     req.body.account_id = req.params.account_id;
     req.body.contact_id = req.params.contact_id;
@@ -663,7 +663,7 @@ app.put("/accounts/:account_id/contacts/:contact_id", checkAuth, async function 
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async function (req, res) {
+app.delete("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, async function (req, res) {
   try {
     req.body.account_id = req.params.account_id;
     req.body.contact_id = req.params.contact_id;
@@ -710,7 +710,7 @@ app.delete("/accounts/:account_id/contacts/:contact_id", checkAuth, async functi
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/interactions", checkAuth, async function (req, res) {
+app.post("/accounts/:account_id/interactions", authModule.checkAuth, async function (req, res) {
   try {
     req.body.account_id = req.params.account_id;
     req.body.userInfo = req.userInfo;
@@ -762,7 +762,7 @@ app.post("/accounts/:account_id/interactions", checkAuth, async function (req, r
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res) {
+app.put("/accounts/:account_id/interactions/:interaction_id", authModule.checkAuth, async function (req, res) {
   try {
     req.body.account_id = req.params.account_id;
     req.body.interaction_id = req.params.interaction_id;
@@ -805,7 +805,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id", checkAuth, async f
  *       401:
  *         description: Unauthorized
  */
-app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, async function (req, res) {
+app.delete("/accounts/:account_id/interactions/:interaction_id", authModule.checkAuth, async function (req, res) {
   try {
     req.body.account_id = req.params.account_id;
     req.body.interaction_id = req.params.interaction_id;
@@ -868,7 +868,7 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", checkAuth, asyn
  *       401:
  *         description: Unauthorized
  */
-app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, res) {
+app.post("/accounts/:account_id/actionItems/", authModule.checkAuth, async function (req, res) {
   if (!req.body.title || !req.body.dueDate) {
     return res.status(400).send("Title and due date are required fields.");
   }
@@ -936,7 +936,7 @@ app.post("/accounts/:account_id/actionItems/", checkAuth, async function (req, r
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async function (req, res) {
+app.put("/accounts/:account_id/actionItems/:action_item_id", authModule.checkAuth, async function (req, res) {
   try {
     req.body.account_id = req.params.account_id;
     req.body.action_item_id = req.params.action_item_id;
@@ -983,7 +983,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", checkAuth, async fu
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth, async function (req, res) {
+app.put("/accounts/:account_id/actionItems/:action_item_id/complete", authModule.checkAuth, async function (req, res) {
   try {
     const actionItem = await actionItemsModule.completeActionItem({ userInfo: req.userInfo, account_id: req.params.account_id, action_item_id: req.params.action_item_id});
     res.send(actionItem);
@@ -1027,7 +1027,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", checkAuth,
  *       401:
  *         description: Unauthorized
  */
-app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth, async function (req, res) {
+app.put("/accounts/:account_id/interactions/:interaction_id/unstick", authModule.checkAuth, async function (req, res) {
   try {
     const interaction = await interactionModule.unstickInteraction({ userInfo: req.userInfo, account_id: req.params.account_id, interaction_id: req.params.interaction_id });
     res.send(interaction);
@@ -1067,7 +1067,7 @@ app.put("/accounts/:account_id/interactions/:interaction_id/unstick", checkAuth,
  *       401:
  *         description: Unauthorized
  */
-app.get("/interactions/latest", checkAuth, async function (req, res) {
+app.get("/interactions/latest", authModule.checkAuth, async function (req, res) {
   try {
     const latestInteractions = await interactionModule.getLatestInteractions({ userInfo: req.userInfo });
     res.send(latestInteractions);
@@ -1094,7 +1094,7 @@ app.get("/interactions/latest", checkAuth, async function (req, res) {
  *         schema:
  *           type: string
  */
-app.get("/find", checkAuth, async function (req, res) {
+app.get("/find", authModule.checkAuth, async function (req, res) {
   const name = req.query.name;
   if (!name) {
     return res.status(400).send("Query parameter 'name' is required");

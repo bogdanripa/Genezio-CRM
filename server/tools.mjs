@@ -1,4 +1,3 @@
-let crmToken = null;
 const tools = [];
 
 function cleanupSchema(obj) {
@@ -108,63 +107,42 @@ function loadTools(swaggerSpec) {
   return tools;
 }
 
-function setCRMToken(token) {
-  crmToken = token;
-}
-
 const authTools = [
   {
-    type: "function",
-    function: {
-      name: "initAuth",
-      description: `
-        Initiates the authentication for a given user.
-        This function will find the user by email and, of found,
-        will send a auth code to the users' email that they have to enter later on.
-      `,
-      parameters: {
-        type: "object",
-        required: ["email"],
-        properties: {
-          "email": {
-            type: "string",
-            description: "The user's email address, as provided by the user.",
-          }
-        },
-        "type": "object"
-      }
-    },
-    "path": "/auth/email-code/init",
-    "method": "POST",
-    "addSecret": true
+    name: "initAuth",
+    title: "Initiates the authentication for a given user",
+    description: `Initiates the authentication for a given user. This function will find the user by email and, of found, will send a auth code to the users' email that they have to enter later on.`,
+    inputSchema: {
+      type: "object",
+      required: ["email"],
+      properties: {
+        "email": {
+          type: "string",
+          description: "The user's email address, as provided by the user.",
+        }
+      },
+      "type": "object"
+    }
   },
   {
-    type: "function",
-    function: {
-      name: "authenticate",
-      description: `
-        Authenticates a given user.
-        Receives the user's email and a auth code and returns a auth token.
-      `,
-      parameters: {
-        type: "object",
-        required: ["email", "code"],
-        properties: {
-          "email": {
-            type: "string",
-            description: "The user's email address, as provided by the user.",
-          },
-          "code": {
-            type: "string",
-            description: "The auth code, as provided back by the user."
-          }
+    name: "authenticate",
+    title: "Authenticates a given user",
+    description: `Authenticates a given user. Receives the user's email and a auth code and returns a auth token.`,
+    parameters: {
+      type: "object",
+      required: ["email", "code"],
+      properties: {
+        "email": {
+          type: "string",
+          description: "The user's email address, as provided by the user.",
+        },
+        "code": {
+          type: "string",
+          description: "The auth code, as provided back by the user."
         }
       }
-    },
-    "path": "/auth/email-code/authenticate",
-    "method": "POST",
-    "addSecret": true
+    }
   }
 ]
 
-export {authTools, setCRMToken, loadTools};
+export {authTools, loadTools};

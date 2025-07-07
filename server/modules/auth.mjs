@@ -21,8 +21,9 @@ export async function checkAuth(req, res, next) {
       }
   
       req.userInfo = userInfo;
-      next();
+      if (next) next();
     } catch (error) {
+      console.error(error);
       res.status(401).send("Unauthorized");
     }
 }

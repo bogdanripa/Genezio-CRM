@@ -1,10 +1,11 @@
 import express from "express";
 import { JSONRPCServer } from "json-rpc-2.0";
-import { loadTools } from "../tools.mjs";
+import * as authModule from "./auth.mjs";
+import { loadTools, authTools } from "../tools.mjs";
 import { loadSwagger } from './swagger.mjs'
 
-
 const mcpRouter = express.Router();
+let tools = [];
 
 let toolsMap = {};
 function loadMCPTools(tm) {
@@ -21,17 +22,22 @@ rpc.addMethod("initialize", ({ protocolVersion, clientInfo }) => ({
 // Notify client ready
 rpc.addMethod("notifications/initialized", () => null);
 
-let tools = [];
 // 2️⃣ tools/list (tool discovery)
-rpc.addMethod("tools/list", function () {
-  if (tools.length == 0) {
-    const swaggerSpec = loadSwagger();
-    tools = loadTools(swaggerSpec);
-    console.log(tools);
-  }
-  return {
-    tools
-  }
+rpc.addMethod("tools/list", function ({ name, arguments: args }) {
+    args = args ?? {};
+    if (args.userInfo) {
+        if (tools.length == 0) {
+            const swaggerSpec = loadSwagger();
+            tools = loadTools(swaggerSpec);
+        }
+        return {
+            tools
+        }
+    } else {
+        return  {
+            authTools
+        }
+    }
 });
 
 function httpStatusToJsonRpcErrorCode(status) {
@@ -58,12 +64,17 @@ function httpStatusToJsonRpcErrorCode(status) {
 }
 // 3️⃣ tools/call (invoke a tool)
 rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
-  if (tools.length === 0) {
-      const swaggerSpec = loadSwagger();
-      tools = loadTools(swaggerSpec);
-  }
-
-  const toolObj = tools.find(tool => tool.name === name);
+    args = args ?? {};
+    let toolObj = null; 
+    if (args.userInfo) {
+        if (tools.length === 0) {
+            const swaggerSpec = loadSwagger();
+            tools = loadTools(swaggerSpec);
+        }
+        toolObj = tools.find(tool => tool.name === name);
+    } else {
+        toolObj = authTools.find(tool => tool.name === name);
+    }
 
   if (!toolObj || !toolsMap[name]) {
       throw {
@@ -73,7 +84,6 @@ rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
   }
 
   try {
-      args = args ?? {};
       const result = await toolsMap[name](args);
       return result;
   } catch (err) {
@@ -89,7 +99,11 @@ mcpRouter.post("/", async (req, res) => {
   const json = req.body;
   if (!json.params) json.params = {};
   if (!json.params.arguments) json.params.arguments = {};
-  json.params.arguments.userInfo = req.userInfo;
+  if (req.headers?.authorization) {
+    await authModule.checkAuth(req, res);
+    if (!req.userInfo) return;
+    json.params.arguments.userInfo = req.userInfo;
+  }
 
   const response = await rpc.receive(json);
   if (response) res.json(response);
