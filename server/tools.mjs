@@ -126,15 +126,15 @@ const authTools = [
     name: "authenticate",
     title: "Authenticates a given user",
     description: `Authenticates a given user. Receives the user's email and a auth code and returns a auth token.`,
-    parameters: {
+    inputSchema: {
       type: "object",
-      required: ["email", "code"],
+      required: ["email", "authCode"],
       properties: {
         "email": {
           type: "string",
           description: "The user's email address, as provided by the user.",
         },
-        "code": {
+        "authCode": {
           type: "string",
           description: "The auth code, as provided back by the user."
         }

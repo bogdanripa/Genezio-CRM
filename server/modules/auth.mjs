@@ -75,13 +75,13 @@ async function getToken(userId) {
   return authSession.token;
 }
 
-export async function authenticate({ email, phone, code }) {
+export async function authenticate({ email, phone, authCode }) {
   const user = await Users.findOne({ email });
   if (!user) {
     throw {status: 404, message: "User's email was not found. They can create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate."};
   }
   
-  if (user.emailCode !== code) {
+  if (user.emailCode !== authCode) {
     throw {status: 401, message: "Invalid authentication code"};
   }
 
