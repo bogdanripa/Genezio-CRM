@@ -53,7 +53,7 @@ export async function initAuth({ email }) {
       emailServiceToken: process.env.EMAIL_SERVICE_TOKEN,
       to: email,
       subject: "Your Genezio CRM Authentication Code",
-      text: "The code to authenticate your Genezio CRM account is: " + code,
+      text: "The auth code to authenticate your Genezio CRM account is: " + code,
   });
 
   if (!response.success) {
@@ -63,12 +63,17 @@ export async function initAuth({ email }) {
   user.emailCode = code;
   await user.save();
 
-  return "An email was sent with the code to authenticate. Please share it back with me.";
+  return "An email was sent with the auth code to authenticate. Please share it back with me.";
 }
 
 function hexInc(hex) {
   const num = BigInt("0x" + hex);
   return (num + BigInt(1)).toString(16);
+}
+
+function hexDec(hex) {
+  const num = BigInt("0x" + hex);
+  return (num - BigInt(1)).toString(16);
 }
 
 async function getToken(userId) {
@@ -79,16 +84,16 @@ async function getToken(userId) {
   return authSession.token;
 }
 
-export async function authenticate({ email, phone, authCode }) {
-  if (!email || !authCode) {
-    throw {status: 401, message: "The user's email and authCode are both required in the authenticate call."}
+export async function authenticate({ email, phone, auth_code }) {
+  if (!email || !auth_code) {
+    throw {status: 401, message: "The user's email and auth_code are both required in the authenticate call."}
   }
   const user = await Users.findOne({ email });
   if (!user) {
     throw {status: 404, message: "User's email was not found. They can create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate."};
   }
   
-  if (user.emailCode !== authCode) {
+  if (user.emailCode !== auth_code) {
     throw {status: 401, message: "Invalid authentication code"};
   }
 
@@ -107,5 +112,28 @@ export async function authenticate({ email, phone, authCode }) {
   return {
       token,
       name: user.name
+  }
+}
+
+export async function getUserDataFromToken({ auth_token }) {
+  if (!auth_token) {
+    throw {status: 401, message: "The auth_token is required."}
+  }
+
+  const authSession = await ActiveSessions.findOne({ token: auth_token });
+  if (!authSession) {
+      throw {status: 500, message: "Session expired. Please log in to the Genezio CRM web interface again and then come back."};
+  }
+
+  const user = await Users.findOne({ userId: hexDec(authSession.userId) });
+
+  if (!user) {
+    throw {status: 404, message: "User not found."};
+  }
+
+  return {
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
   }
 }

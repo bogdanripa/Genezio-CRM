@@ -125,18 +125,32 @@ const authTools = [
   {
     name: "authenticate",
     title: "Authenticates a given user",
-    description: `Authenticates a given user. Receives the user's email and a auth code and returns a auth token.`,
+    description: `Authenticates a given user. Receives the user's email and a auth code and returns an auth token.`,
     inputSchema: {
       type: "object",
-      required: ["email", "authCode"],
+      required: ["email", "auth_code"],
       properties: {
         "email": {
           type: "string",
           description: "The user's email address, as provided by the user.",
         },
-        "authCode": {
+        "auth_code": {
           type: "string",
           description: "The auth code, as provided back by the user."
+        }
+      }
+    },
+  },
+  {
+    name: "getUserDataFromToken",
+    title: "Gets user details - like their name and email from an auth token",
+    inputSchema: {
+      type: "object",
+      required: ["auth_token"],
+      properties: {
+        "auth_token": {
+          type: "string",
+          description: "the auth token"
         }
       }
     }

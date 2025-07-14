@@ -27,6 +27,7 @@ import ActionItemsCard from "@/polymet/components/action-items-card";
 import {
   ActionItem,
   completeActionItem,
+  deleteActionItem,
   updateActionItem,
   addActionItem
 } from "@/polymet/data/action-items-data";
@@ -258,6 +259,22 @@ export default function AccountDetailPage() {
     toast({
       title: "Action Item Completed",
       description: "The action item has been marked as complete",
+    });
+  };
+
+  const handleDeleteActionItem = async (actionItemId: string) => {
+    await deleteActionItem(
+      account.id,
+      actionItemId
+    );
+
+    account.actionItems = account.actionItems?.filter(item => item.id !== actionItemId);
+
+    setAccount(account);
+
+    toast({
+      title: "Action Item Removed",
+      description: "The action item has been removed",
     });
   };
 

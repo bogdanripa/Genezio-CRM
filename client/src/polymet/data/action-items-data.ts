@@ -54,6 +54,13 @@ export const completeActionItem = async (
   return response.data as ActionItem;
 };
 
+export const deleteActionItem = async (
+  accountId: string,
+  actionItemId: string
+) => {
+  await axios.delete(`/accounts/${accountId}/actionItems/${actionItemId}`);
+}
+
 // Helper function to update an action item
 export const updateActionItem = async (
   accountId: string,

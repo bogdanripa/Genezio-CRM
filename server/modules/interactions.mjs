@@ -9,14 +9,24 @@ function fixAttendees(attendees, account) {
     const errors = [];
     const attendeesList = attendees.map((attendee) => {
       if (attendee.id && attendee.name && attendee.email) return attendee;
+
+      if (typeof attendee == "string") {
+        attendee = {
+          id: attendee,
+          name: attendee,
+          email: attendee,
+        }
+      }
+
       let user = null;
+
       const teamMembers = account.teamMembers || [];
+      if (!user && attendee.name)
+        user = teamMembers.find((member) => member.name.toLowerCase() === attendee.name.toLowerCase());
       if (attendee.id)
         user = teamMembers.find((member) => member.id === attendee.id);
       if (!user && attendee.email)
         user = teamMembers.find((member) => member.email === attendee.email);
-      if (!user && attendee.name)
-        user = teamMembers.find((member) => member.name.toLowerCase() === attendee.name.toLowerCase());
       if (user)
         return {
           id: user.id,

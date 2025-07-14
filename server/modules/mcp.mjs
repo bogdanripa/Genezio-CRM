@@ -65,6 +65,7 @@ function httpStatusToJsonRpcErrorCode(status) {
 // 3️⃣ tools/call (invoke a tool)
 rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
     args = args ?? {};
+    console.log(`tools/call calling ${name} with ${JSON.stringify(args)}`);
     let toolObj = null; 
     if (args.userInfo) {
         if (tools.length === 0) {
@@ -77,7 +78,8 @@ rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
     }
 
   if (!toolObj || !toolsMap[name]) {
-      throw {
+    console.error(`tools/call error in ${name}: Tool not found`);
+    throw {
           code: -32601,
           message: `Tool not found: ${name}`
       };
@@ -85,9 +87,10 @@ rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
 
   try {
       const result = await toolsMap[name](args);
+      console.log(`tools/call tesult: ${JSON.stringify(result)}`)
       return result;
   } catch (err) {
-      console.error(`tools/call error in ${name}:`, err);
+      console.error(`tools/call error in ${name}: ${JSON.stringify(err)}`);
       throw {
           code: httpStatusToJsonRpcErrorCode(err.status || 500),
           message: err.message || "Internal Server Error"

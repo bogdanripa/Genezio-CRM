@@ -112,7 +112,7 @@ app.get("/accounts/", authModule.checkAuth, async function (req, res) {
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     security:
@@ -222,7 +222,7 @@ app.post("/accounts", authModule.checkAuth, async function (req, res) {
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -300,7 +300,7 @@ app.put("/accounts/:account_id", authModule.checkAuth, async function (req, res)
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     responses:
@@ -332,7 +332,7 @@ app.delete("/accounts/:account_id", authModule.checkAuth, async function (req, r
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     responses:
@@ -378,7 +378,7 @@ app.get("/accounts/:account_id/teamMembers", authModule.checkAuth, async functio
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -428,7 +428,7 @@ app.post("/accounts/:account_id/teamMembers", authModule.checkAuth, async functi
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: team_member_id
@@ -468,7 +468,7 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", authModule.check
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -507,14 +507,14 @@ app.put("/accounts/:account_id/transferOwnership", authModule.checkAuth, async f
  *     operationId: addContact
  *     summary: Add a contact to an account
  *     tags: [Account Contacts]
- *     description: Adds a new contact (employee) to the specified account. Contact name and role are required fields.
+ *     description: Adds a new contact (employee) to the specified account. Name and role are required fields.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -581,7 +581,7 @@ app.post("/accounts/:account_id/contacts", authModule.checkAuth, async function 
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: contact_id
@@ -646,7 +646,7 @@ app.put("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, asyn
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: contact_id
@@ -682,14 +682,14 @@ app.delete("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, a
  *     operationId: addInteraction
  *     summary: Create a new interaction
  *     tags: [Account Interactions]
- *     description: Adds a new interaction to the specified account.
+ *     description: Adds a new interaction to the specified account id. You can specify the type, timestamp, title, description and attendees
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -728,20 +728,20 @@ app.post("/accounts/:account_id/interactions", authModule.checkAuth, async funct
  *     operationId: updateInteraction
  *     summary: Update an existing interaction
  *     tags: [Account Interactions]
- *     description: Updates the details of an existing interaction within the specified account. None of the fields except for the interaction id are required.
+ *     description: Updates the details of an existing interaction id within the specified account id. None of the fields except for the account id and the interaction id are required, but you can specify the type, timestamp, title, description and attendees
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: interaction_id
  *         in: path
  *         required: true
- *         description: The ID of the interaction to update
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the account id
  *         schema:
  *           type: string
  *     requestBody:
@@ -788,13 +788,13 @@ app.put("/accounts/:account_id/interactions/:interaction_id", authModule.checkAu
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: interaction_id
  *         in: path
  *         required: true
- *         description: The ID of the interaction to delete
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the account id
  *         schema:
  *           type: string
  *     responses:
@@ -831,7 +831,7 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", authModule.chec
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -897,7 +897,7 @@ app.post("/accounts/:account_id/actionItems/", authModule.checkAuth, async funct
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: action_item_id
@@ -963,7 +963,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", authModule.checkAut
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: action_item_id
@@ -995,6 +995,46 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", authModule
 
 /**
  * @openapi
+ * /accounts/{account_id}/actionItems/{action_item_id}:
+ *   delete:
+ *     operationId: deleteActionItem
+ *     summary: Deletes an action item
+ *     tags: [Account Action Items]
+ *     description: Deletes a specific action item.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: account_id
+ *         in: path
+ *         required: true
+ *         description: The account id. The account id can be found by calling findByName.
+ *         schema:
+ *           type: string
+ *       - name: action_item_id
+ *         in: path
+ *         required: true
+ *         description: The ID of the action item to update
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Action item deleted successfully
+ *       404:
+ *         description: Account or action item not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.delete("/accounts/:account_id/actionItems/:action_item_id", authModule.checkAuth, async function (req, res) {
+  try {
+    await actionItemsModule.deleteActionItem({ userInfo: req.userInfo, account_id: req.params.account_id, action_item_id: req.params.action_item_id});
+    res.status(204).send();
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
+
+/**
+ * @openapi
  * /accounts/{account_id}/interactions/{interaction_id}/unstick:
  *   put:
  *     operationId: unstickInteraction
@@ -1007,13 +1047,13 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", authModule
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The ID of the account
+ *         description: The account id. The account id can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: interaction_id
  *         in: path
  *         required: true
- *         description: The ID of the interaction to unstick
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the account id
  *         schema:
  *           type: string
  *     responses:

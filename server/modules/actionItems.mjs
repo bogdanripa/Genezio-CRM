@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { getAccount, getAllAccounts } from "./accounts.mjs";
 import { sendNotification } from "./notifications.mjs";
+import { Users } from "../db.mjs";
 
 function fixTeamMember(teamMember, account) {
     if (!teamMember) return null;
@@ -152,4 +153,28 @@ export async function completeActionItem({userInfo, account_id, action_item_id }
     await account.save();
 
     return actionItem;
+}
+
+export async function deleteActionItem({userInfo, account_id, action_item_id }) {
+  const account = await getAccount(userInfo, account_id);
+  if (!account) {
+    const accounts = await getAllAccounts(userInfo);
+    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
+    throw { status: 404, message: `Account not found. Available accounts: ${accountNames}` };
+  }
+
+  const actionItem = account.actionItems.find((item) => item.id === action_item_id);
+  if (!actionItem) {
+    let actionItems = "No action items on this account.";
+    if (account.actionItems && account.actionItems.length > 0) {
+      actionItems = account.actionItems.map((item) => `${item.title} (action item id: ${item.id})`).join(", ");
+    }
+    throw { status: 404, message: `Action item not found. Available action items: ${actionItems}` };
+  }
+
+  if (account.owner.id !== userInfo.userId)
+    await sendNotification(account.owner.phone, `${userInfo.name} deleted "${actionItem.title}" on ${account.name}.`);
+  
+  account.actionItems = account.actionItems?.filter(item => item.id !== action_item_id);
+  await account.save();
 }
