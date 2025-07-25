@@ -1,6 +1,6 @@
 import { getAccount, getAllAccounts } from "./accounts.mjs";
 import { sendNotification } from "./notifications.mjs";
-import Users from "../models/Users.mjs";
+import { Users } from "../db.mjs";
 
 export async function addTeamMember({ userInfo, account_id, id }) {
   const account = await getAccount(userInfo, account_id);
