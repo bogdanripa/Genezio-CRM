@@ -140,13 +140,13 @@ export const deleteAccount = async (id: string): Promise<void> => {
   await axios.delete(`/accounts/${id}`);
 }
 
-export const addTeamMemberToAccount = async(accountId: string, id: string): Promise<void> => {
-  const response = await axios.post(`/accounts/${accountId}/teamMembers`, { id });
+export const addTeamMemberToAccount = async(accountId: string, team_member_id: string): Promise<void> => {
+  const response = await axios.post(`/accounts/${accountId}/teamMembers`, { team_member_id });
   return response.data;
 }
 
-export const removeTeamMemberFromAccount = async(accountId: string, id: string): Promise<void> => {
-  await axios.delete(`/accounts/${accountId}/teamMembers/${id}`);
+export const removeTeamMemberFromAccount = async(accountId: string, team_member_id: string): Promise<void> => {
+  await axios.delete(`/accounts/${accountId}/teamMembers/${team_member_id}`);
 }
 
 export const transferAccountOwnership = async(accountId: string, id: string): Promise<void> => {

@@ -388,11 +388,11 @@ app.get("/accounts/:account_id/teamMembers", authModule.checkAuth, async functio
  *           schema:
  *             type: object
  *             required:
- *               - id
+ *               - team_member_id
  *             properties:
- *               id:
+ *               team_member_id:
  *                 type: string
- *                 description: The userId of the user to be added as a team member
+ *                 description: The team member id of the user to be added as a team member
  *     responses:
  *       201:
  *         description: User added to the team members successfully
