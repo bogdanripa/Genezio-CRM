@@ -6,11 +6,6 @@ export async function addContact(parameters) {
     const userInfo = parameters.userInfo;
     const accountId = parameters.account_id;
     const account = await getAccount(userInfo, accountId);
-    if (!account) {
-        const accounts = await getAllAccounts(userInfo);
-        const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-        throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-    }
   
     const newContact = {
         id: crypto.randomUUID(),
@@ -36,11 +31,6 @@ export async function updateContact(parameters) {
     const accountId = parameters.account_id;
     const contactId = parameters.contact_id;
     const account = await getAccount(userInfo, accountId);
-    if (!account) {
-        const accounts = await getAllAccounts(userInfo);
-        const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-        throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-    }
   
     const contact = account.employees.find((contact) => contact.id === contactId);
     if (!contact) {
@@ -67,12 +57,7 @@ export async function removeContact(parameters) {
     const accountId = parameters.account_id;
     const contactId = parameters.contact_id;
     const account = await getAccount(userInfo, accountId);
-    if (!account) {
-      const accounts = await getAllAccounts(userInfo);
-      const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-      throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-    }
-  
+      
     // Flatten employees
     account.employees = account.employees.map((m) =>
       typeof m.toObject === "function" ? m.toObject() : m

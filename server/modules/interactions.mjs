@@ -66,11 +66,6 @@ export async function addInteraction(parameters) {
   const userInfo = parameters.userInfo;
   const accountId = parameters.account_id;
   const account = await getAccount(userInfo, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw { status: 404, message: `Account not found. Available accounts: ${accountNames}` };
-  }
 
   if (!parameters.title || !parameters.type) {
     throw { status: 400, message: "Interaction type is required" };
@@ -142,11 +137,6 @@ export async function updateInteraction(parameters) {
   const accountId = parameters.account_id;
   const interactionId = parameters.interaction_id;
   const account = await getAccount(userInfo, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw { status: 404, message: `Account not found. Available accounts: ${accountNames}` };
-  }
 
   const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
   if (!interaction) {
@@ -233,11 +223,6 @@ export async function deleteInteraction(parameters) {
   const accountId = parameters.account_id;
   const interactionId = parameters.interaction_id;
   const account = await getAccount(userInfo, accountId);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw { status: 404, message: `Account not found. Available accounts: ${accountNames}` };
-  }
 
   // Flatten interactions
   account.interactions = account.interactions.map((m) =>
@@ -265,11 +250,6 @@ export async function deleteInteraction(parameters) {
 
 export async function unstickInteraction(userInfo, { account_id, interaction_id }) {
   const account = await getAccount(userInfo, account_id);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw { status: 404, message: `Account not found. Available accounts: ${accountNames}` };
-  }
 
   const interaction = account.interactions.find((interaction) => interaction.id === interaction_id);
   if (!interaction) {

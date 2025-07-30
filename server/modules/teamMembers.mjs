@@ -4,11 +4,6 @@ import { Users } from "../db.mjs";
 
 export async function addTeamMember({ userInfo, account_id, team_member_id }) {
   const account = await getAccount(userInfo, account_id);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-  }
 
   const newMember = await Users.findOne({
     userId: team_member_id
@@ -48,11 +43,6 @@ export async function addTeamMember({ userInfo, account_id, team_member_id }) {
 
 export async function removeTeamMember({ userInfo, account_id, team_member_id }) {
   const account = await getAccount(userInfo, account_id);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-  }
 
   if (team_member_id == 'undefined') {
     team_member_id = undefined;
@@ -81,12 +71,7 @@ export async function removeTeamMember({ userInfo, account_id, team_member_id })
 
 export async function getAllTeamMembersOnAccount({ userInfo, account_id }) {
   const account = await getAccount(userInfo, account_id);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-  }
-
+  
   // Get all team members, including the owner, with name, email, and id
   const teamMembers = [
     {

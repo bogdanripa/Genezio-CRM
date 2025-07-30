@@ -112,7 +112,7 @@ app.get("/accounts/", authModule.checkAuth, async function (req, res) {
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     security:
@@ -214,7 +214,7 @@ app.post("/accounts", authModule.checkAuth, async function (req, res) {
  * /accounts/{account_id}:
  *   put:
  *     operationId: updateAccount
- *     summary: Update an account by account_id. Call this only if you need to update an existing account. None of the fields except for the account id are required.
+ *     summary: Update an account by account_id. Call this only if you need to update an existing account. None of the fields except for the Account ID are required.
  *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []
@@ -222,7 +222,7 @@ app.post("/accounts", authModule.checkAuth, async function (req, res) {
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -300,7 +300,7 @@ app.put("/accounts/:account_id", authModule.checkAuth, async function (req, res)
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     responses:
@@ -332,7 +332,7 @@ app.delete("/accounts/:account_id", authModule.checkAuth, async function (req, r
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     responses:
@@ -378,7 +378,7 @@ app.get("/accounts/:account_id/teamMembers", authModule.checkAuth, async functio
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -428,7 +428,7 @@ app.post("/accounts/:account_id/teamMembers", authModule.checkAuth, async functi
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: team_member_id
@@ -468,7 +468,7 @@ app.delete("/accounts/:account_id/teamMembers/:team_member_id", authModule.check
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -514,7 +514,7 @@ app.put("/accounts/:account_id/transferOwnership", authModule.checkAuth, async f
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -581,7 +581,7 @@ app.post("/accounts/:account_id/contacts", authModule.checkAuth, async function 
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: contact_id
@@ -646,7 +646,7 @@ app.put("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, asyn
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: contact_id
@@ -682,14 +682,14 @@ app.delete("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, a
  *     operationId: addInteraction
  *     summary: Create a new interaction
  *     tags: [Account Interactions]
- *     description: Adds a new interaction to the specified account id. You can specify the type, timestamp, title, description and attendees
+ *     description: Adds a new interaction to the specified Account ID. You can specify the type, timestamp, title, description and attendees
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -728,20 +728,20 @@ app.post("/accounts/:account_id/interactions", authModule.checkAuth, async funct
  *     operationId: updateInteraction
  *     summary: Update an existing interaction
  *     tags: [Account Interactions]
- *     description: Updates the details of an existing interaction id within the specified account id. None of the fields except for the account id and the interaction id are required, but you can specify the type, timestamp, title, description and attendees
+ *     description: Updates the details of an existing interaction id within the specified Account ID. None of the fields except for the Account ID and the interaction id are required, but you can specify the type, timestamp, title, description and attendees
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: interaction_id
  *         in: path
  *         required: true
- *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the account id
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the Account ID
  *         schema:
  *           type: string
  *     requestBody:
@@ -788,13 +788,13 @@ app.put("/accounts/:account_id/interactions/:interaction_id", authModule.checkAu
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: interaction_id
  *         in: path
  *         required: true
- *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the account id
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the Account ID
  *         schema:
  *           type: string
  *     responses:
@@ -831,7 +831,7 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", authModule.chec
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *     requestBody:
@@ -897,7 +897,7 @@ app.post("/accounts/:account_id/actionItems/", authModule.checkAuth, async funct
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: action_item_id
@@ -963,7 +963,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id", authModule.checkAut
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: action_item_id
@@ -1007,7 +1007,7 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", authModule
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: action_item_id
@@ -1047,13 +1047,13 @@ app.delete("/accounts/:account_id/actionItems/:action_item_id", authModule.check
  *       - name: account_id
  *         in: path
  *         required: true
- *         description: The account id. The account id can be found by calling findByName.
+ *         description: The Account ID. The Account ID can be found by calling findByName.
  *         schema:
  *           type: string
  *       - name: interaction_id
  *         in: path
  *         required: true
- *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the account id
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the Account ID
  *         schema:
  *           type: string
  *     responses:

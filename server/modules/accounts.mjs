@@ -11,13 +11,22 @@ export async function getAllAccounts(userInfo) {
 }
   
 export async function getAccount(userInfo, accountId) {
-    const address = userInfo.address;
-    const account = await Accounts.findOne({ 
-        id: accountId, 
-        "domain": address
-    });
-    if (!account) return null;
-    return account;
+  const address = userInfo.address;
+  const account = await Accounts.findOne({ 
+    id: accountId,
+    "domain": address
+  });
+
+  if (!account) {
+    const accounts = await getAllAccounts(userInfo);
+    const accountNames = accounts.map((a) => `${a.name} (Account ID: ${a.id})`).join(", ");
+    if (!accountId) {
+      throw { status: 400, message: "Account ID (account_id) is required. Available accounts: ${accountNames}" };
+    }
+    throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`};
+  }
+  
+  return account;
 }
 
 export async function getAllAccountsSummary({ userInfo }) {
@@ -51,12 +60,8 @@ export async function getAllAccountsSummary({ userInfo }) {
 
 export async function getAccountDetails(parameters) {
   const userInfo = parameters.userInfo;
-  const account = await getAccount(userInfo, parameters.account_id);
-  if (!account) {
-      const accounts = await getAllAccounts(userInfo);
-      const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-      throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`};
-  }
+  const accountId = parameters.account_id;
+  const account = await getAccount(userInfo, accountId);
   if (account.interactions && account.interactions.length)
       account.interactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   if (account.actionItems && account.actionItems.length)
@@ -91,12 +96,8 @@ export async function createAccount(parameters) {
 
 export async function updateAccount(parameters) {
   const userInfo = parameters.userInfo;
-  const account = await getAccount(userInfo, parameters.account_id);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-  }
+  const accountId = parameters.account_id;
+  const account = await getAccount(userInfo, accountId);
 
   if (parameters.name !== undefined) account.name = parameters.name;
   if (parameters.website !== undefined) account.website = parameters.website;
@@ -116,25 +117,14 @@ export async function updateAccount(parameters) {
 
 export async function deleteAccount({ userInfo, account_id }) {
   const account = await getAccount(userInfo, account_id);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-  }
-
   if (account.owner.id !== userInfo.userId)
     await sendNotification(account.owner.phone, `Account ${account.name} has been deleted by ${userInfo.name}.`);
 
   await Accounts.deleteOne({ id: account_id });
 }
 
-export async function transferOwnership({ userInfo,account_id, id} ) {
+export async function transferOwnership({ userInfo, account_id, id } ) {
   const account = await getAccount(userInfo, account_id);
-  if (!account) {
-    const accounts = await getAllAccounts(userInfo);
-    const accountNames = accounts.map((a) => `${a.name} (account id: ${a.id})`).join(", ");
-    throw {status: 404, message: `Account not found. Available accounts: ${accountNames}`}
-  }
   const newOwner = await Users.findOne({
     userId: id
   }).lean();
