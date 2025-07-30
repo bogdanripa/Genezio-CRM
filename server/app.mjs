@@ -407,7 +407,7 @@ app.get("/accounts/:account_id/teamMembers", authModule.checkAuth, async functio
  */
 app.post("/accounts/:account_id/teamMembers", authModule.checkAuth, async function (req, res) {
   try {
-    const teamMember = await teamMembersModule.addTeamMember({ userInfo: req.userInfo, account_id: req.params.account_id, id: req.body.id });
+    const teamMember = await teamMembersModule.addTeamMember({ userInfo: req.userInfo, account_id: req.params.account_id, team_member_id: req.body.team_member_id });
     res.status(201).send(teamMember);
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");

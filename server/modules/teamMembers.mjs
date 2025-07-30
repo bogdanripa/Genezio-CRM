@@ -2,7 +2,7 @@ import { getAccount, getAllAccounts } from "./accounts.mjs";
 import { sendNotification } from "./notifications.mjs";
 import { Users } from "../db.mjs";
 
-export async function addTeamMember({ userInfo, account_id, id }) {
+export async function addTeamMember({ userInfo, account_id, team_member_id }) {
   const account = await getAccount(userInfo, account_id);
   if (!account) {
     const accounts = await getAllAccounts(userInfo);
@@ -11,12 +11,11 @@ export async function addTeamMember({ userInfo, account_id, id }) {
   }
 
   const newMember = await Users.findOne({
-    userId: id
+    userId: team_member_id
   }).lean();
-
   
   if (!newMember) {
-    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+    const teamMembers = (account.teamMembers || []).push(account.owner).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
     throw {status: 404, message: `User not found. Account team members are: ${teamMembers}`}
   }
   newMember.id = newMember.userId;
