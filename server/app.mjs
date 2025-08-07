@@ -141,7 +141,7 @@ app.get("/accounts/:account_id", authModule.checkAuth, async function(req, res) 
  * /accounts:
  *   post:
  *     operationId: createAccount
- *     summary: Create a new account
+ *     summary: This will create a new account. Name and Industry are required fields, the rest are optional. accountType defaults to Client and can be either Client or Partner.
  *     tags: [Accounts]
  *     security:
  *       - bearerAuth: []

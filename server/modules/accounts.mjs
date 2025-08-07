@@ -70,6 +70,18 @@ export async function getAccountDetails(parameters) {
 }
 
 export async function createAccount(parameters) {
+  if (!parameters.name) {
+    throw { status: 400, message: "Name is required." };
+  }
+
+  if (!parameters.industry) {
+    throw { status: 400, message: "Industry is required." };
+  }
+
+  if (parameters.accountType && !["Client", "Partner"].includes(parameters.accountType)) {
+    throw { status: 400, message: "Invalid account type. Allowed values are: Client, Partner." };
+  }
+
   const userInfo = parameters.userInfo;
   const newAccount = {
     id: crypto.randomUUID(),
@@ -79,10 +91,10 @@ export async function createAccount(parameters) {
     industry: parameters.industry,
     domain: userInfo.address,
     owner: {
-    id: userInfo.userId,
-    name: userInfo.name,
-    email: userInfo.email,
-    phone: userInfo.phone,
+      id: userInfo.userId,
+      name: userInfo.name,
+      email: userInfo.email,
+      phone: userInfo.phone,
     },
     metrics: parameters.metrics,
   };
