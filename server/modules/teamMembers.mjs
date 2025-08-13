@@ -10,8 +10,12 @@ export async function addTeamMember({ userInfo, account_id, team_member_id }) {
   }).lean();
   
   if (!newMember) {
-    const teamMembers = (account.teamMembers || []).push(account.owner).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-    throw {status: 404, message: `User not found. Account team members are: ${teamMembers}`}
+    let teamMembers = account.teamMembers;
+    if (!teamMembers) teamMembers = [];
+    teamMembers.push(account.owner);
+
+    const teamMembersText = teamMembers.map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+    throw {status: 404, message: `User not found. Account team members are: ${teamMembersText}`}
   }
   newMember.id = newMember.userId;
   delete newMember.userId;
@@ -57,8 +61,12 @@ export async function removeTeamMember({ userInfo, account_id, team_member_id })
 
   const memberIndex = account.teamMembers.findIndex((member) => { return member.id == team_member_id});
   if (memberIndex === -1) {
-    const teamMembers = (account.teamMembers || []).map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
-    throw {status: 404, message: `Team member not found. Account team members are: ${teamMembers}`}
+    let teamMembers = account.teamMembers;
+    if (!teamMembers) teamMembers = [];
+    teamMembers.push(account.owner);
+
+    const teamMembersText = teamMembers.map((m) => `${m.name} (team member id: ${m.id})`).join(", ");
+    throw {status: 404, message: `Team member not found. Account team members are: ${teamMembersText}`}
   }
 
   account.teamMembers.splice(memberIndex, 1);
