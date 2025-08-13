@@ -1,4 +1,31 @@
-const tools = [];
+let tools = [];
+
+function ensureObjectSchema(schema) {
+  if (!schema || typeof schema !== "object") {
+    return { type: "object", properties: {} };
+  }
+  const out = { ...schema };
+  if (out.type !== "object") out.type = "object";
+  if (!out.properties || typeof out.properties !== "object") {
+    out.properties = {};
+  }
+  if (out.required && !Array.isArray(out.required)) {
+    delete out.required;
+  }
+  return out;
+}
+
+function sanitizeOperationId(raw) {
+  let id = (raw || "op").replace(/{\w+}$/g, "id")
+    .replace(/{\w+}/g, "")
+    .replace(/\W+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/_$/g, "");
+  if (!id) id = "op";
+  if (id.length > 64) id = id.slice(0, 64);
+  return id;
+}
+
 
 function cleanupSchema(obj) {
   if (Array.isArray(obj)) {
@@ -29,35 +56,30 @@ function cleanupSchema(obj) {
 }
 
 function loadTools(swaggerSpec) {
+  tools = [];
   for (const path in swaggerSpec.paths) {
     const methods = swaggerSpec.paths[path];
 
     for (const method in methods) {
       const operation = methods[method];
-      let operationId = operation.operationId || `${method}_${path}`;
-      operationId = operationId.replace(/{\w+}$/g, "id");
-      operationId = operationId.replace(/{\w+}/g, "");
-      operationId = operationId.replace(/\W+/g, "_");
-      operationId = operationId.replace(/_+/g, '_');
-      operationId = operationId.replace(/_$/g, '');
-      const summary = operation.summary;
-      const description = operation.description;
+      const name = sanitizeOperationId(
+        operation.operationId || `${method}_${path}`
+      );
+
+      const description = operation.description || operation.summary || "No description provided";
       const parameters = operation.parameters || [];
-      const shape = {
-        required: [],
-        properties: {}
-      };
+      const shape = { type: "object", required: [], properties: {} };
 
       if (parameters.length > 0) {
-        shape.type = "object";
         for (const param of parameters) {
           if (!param.name) continue;
-          const paramSchema = param.schema || { type: "string" };
+          const paramSchema =
+            (param.schema && typeof param.schema === "object")
+              ? { ...param.schema }
+              : { type: "string" };
+          if (param.description) paramSchema.description = param.description;
           shape.properties[param.name] = paramSchema;
-          if (param.description)
-            shape.properties[param.name].description = param.description;
-          if (param.required)
-            shape.required.push(param.name);
+          if (param.required) shape.required.push(param.name);
         }
       }
 
@@ -67,39 +89,44 @@ function loadTools(swaggerSpec) {
         operation.requestBody.content["application/json"] && 
         operation.requestBody.content["application/json"].schema
       ) {
-          shape.type = "object";
           let requestBodySchema = operation.requestBody.content["application/json"].schema;
           if (requestBodySchema['$ref']) {
             const refPath = requestBodySchema['$ref'].replace('#/components/schemas/', '');
             const refSchema = swaggerSpec.components.schemas[refPath];
             requestBodySchema = refSchema || {};
           }
-          shape.required.push(...(requestBodySchema.required || []));
-          cleanupSchema(requestBodySchema.properties)
-          shape.properties = {
-            ...shape.properties,
-            ...requestBodySchema.properties
-          };
+          if (requestBodySchema && typeof requestBodySchema === "object") {
+            if (requestBodySchema.required) {
+              shape.required.push(...(requestBodySchema.required || []));
+            }
+            if (requestBodySchema.properties && typeof requestBodySchema.properties === "object") {
+              cleanupSchema(requestBodySchema.properties);
+              shape.properties = {
+                ...shape.properties,
+                ...requestBodySchema.properties
+              };
+            }
+          }
       }
 
-      if (shape.required.length === 0)
+      if (Array.isArray(shape.required) && shape.required.length) {
+        shape.required = [...new Set(shape.required)];
+      } else {
         delete shape.required;
-
-      if (Object.keys(shape.properties).length === 0)
+      }
+      if (!shape.properties || Object.keys(shape.properties).length === 0) {
         delete shape.properties;
+      }
 
-      const inputSchema = shape;
+      const parametersSchema = ensureObjectSchema(shape);
 
-      // 5. Build the tool
-      const tool = {
-        name: operationId,
-        title: summary,
-        description: description
-      };
-      if (Object.keys(inputSchema).length > 0)
-        tool.inputSchema = inputSchema;
-
-      tools.push(tool);
+      // Build the tool
+      tools.push({
+        type: "function",
+        name,
+        description,
+        parameters: parametersSchema
+      });
     }
   }
   return tools;
@@ -107,10 +134,10 @@ function loadTools(swaggerSpec) {
 
 const authTools = [
   {
+    type: "function",
     name: "initAuth",
-    title: "Initiates the authentication for a given user",
     description: `Initiates the authentication for a given user. This function will find the user by email and, of found, will send a auth code to the users' email that they have to enter later on.`,
-    inputSchema: {
+    parameters: ensureObjectSchema({
       type: "object",
       required: ["email"],
       properties: {
@@ -120,13 +147,13 @@ const authTools = [
         }
       },
       "type": "object"
-    }
+    })
   },
   {
+    type: "function",
     name: "authenticate",
-    title: "Authenticates a given user",
     description: `Authenticates a given user. Receives the user's email and a auth code and returns an auth token.`,
-    inputSchema: {
+    parameters: ensureObjectSchema({
       type: "object",
       required: ["email", "auth_code"],
       properties: {
@@ -139,12 +166,13 @@ const authTools = [
           description: "The auth code, as provided back by the user."
         }
       }
-    },
+    }),
   },
   {
+    type: "function",
     name: "getUserDataFromToken",
-    title: "Gets user details - like their name and email from an auth token",
-    inputSchema: {
+    description: "Gets user details - like their name and email from an auth token",
+    parameters: ensureObjectSchema({
       type: "object",
       required: ["auth_token"],
       properties: {
@@ -153,7 +181,7 @@ const authTools = [
           description: "the auth token"
         }
       }
-    }
+    })
   }
 ]
 
