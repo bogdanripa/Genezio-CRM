@@ -2,7 +2,7 @@ let tools = [];
 
 function ensureObjectSchema(schema) {
   if (!schema || typeof schema !== "object") {
-    return { type: "object", properties: {} };
+    return { type: "object", properties: { additionalProperties: false } };
   }
   const out = { ...schema };
   if (out.type !== "object") out.type = "object";
@@ -12,6 +12,7 @@ function ensureObjectSchema(schema) {
   if (out.required && !Array.isArray(out.required)) {
     delete out.required;
   }
+  out.additionalProperties = false;
   return out;
 }
 
@@ -146,7 +147,6 @@ const authTools = [
           description: "The user's email address, as provided by the user.",
         }
       },
-      "type": "object"
     })
   },
   {
@@ -165,7 +165,7 @@ const authTools = [
           type: "string",
           description: "The auth code, as provided back by the user."
         }
-      }
+      },
     }),
   },
   {
@@ -180,7 +180,7 @@ const authTools = [
           type: "string",
           description: "the auth token"
         }
-      }
+      },
     })
   }
 ]
