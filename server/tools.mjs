@@ -1,5 +1,20 @@
 let tools = [];
 
+function addAdditionalPropertiesRecursively(schema) {
+  if (!schema || typeof schema !== "object") return;
+
+  if (schema.additionalProperties === undefined) {
+    schema.additionalProperties = false;
+  }
+
+  // Recurse into properties
+  if (schema.properties && typeof schema.properties === "object") {
+    for (const key of Object.keys(schema.properties)) {
+      addAdditionalPropertiesRecursively(schema.properties[key]);
+    }
+  }
+}
+
 function ensureObjectSchema(schema) {
   if (!schema || typeof schema !== "object") {
     return { type: "object", properties: { additionalProperties: false } };
@@ -12,7 +27,7 @@ function ensureObjectSchema(schema) {
   if (out.required && !Array.isArray(out.required)) {
     delete out.required;
   }
-  out.additionalProperties = false;
+  addAdditionalPropertiesRecursively(out);
   return out;
 }
 
