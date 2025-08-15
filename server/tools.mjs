@@ -4,12 +4,16 @@ function addAdditionalPropertiesRecursively(schema) {
   if (!schema || typeof schema !== "object") return;
 
   if (schema.additionalProperties === undefined && schema.properties) {
-    schema.additionalProperties = false;
+    schema.additionalProperties = true;
   }
 
-  if (schema.properties && !schema.required) {
-    schema.required = [];
-  }
+  // mark all properties as required
+  // if (schema.properties) {
+  //   schema.required = [];
+  //   for (const key of Object.keys(schema.properties)) {
+  //     schema.required.push(key);
+  //   }
+  // }
 
   // Recurse into properties
   if (schema.properties && typeof schema.properties === "object") {
@@ -21,7 +25,7 @@ function addAdditionalPropertiesRecursively(schema) {
 
 function ensureObjectSchema(schema) {
   if (!schema || typeof schema !== "object") {
-    return { type: "object", properties: { additionalProperties: false } };
+    return { type: "object", properties: { additionalProperties: true } };
   }
   const out = { ...schema };
   if (out.type !== "object") out.type = "object";
