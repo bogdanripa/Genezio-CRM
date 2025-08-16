@@ -213,7 +213,6 @@ app.post("/accounts", authModule.checkAuth, async function (req, res) {
  * @openapi
  * /accounts/{account_id}:
  *   put:
- *     operationId: updateAccount
  *     summary: Update an account by account_id. Call this only if you need to update an existing account. None of the fields except for the Account ID are required.
  *     tags: [Accounts]
  *     security:
@@ -571,7 +570,6 @@ app.post("/accounts/:account_id/contacts", authModule.checkAuth, async function 
  * @openapi
  * /accounts/{account_id}/contacts/{contact_id}:
  *   put:
- *     operationId: updateContact
  *     summary: Update an existing contact
  *     tags: [Account Contacts]
  *     description: Updates the contact (employee) details associated with the specified account. The account and countact IDs are the only required fields.
@@ -725,7 +723,6 @@ app.post("/accounts/:account_id/interactions", authModule.checkAuth, async funct
  * @openapi
  * /accounts/{account_id}/interactions/{interaction_id}:
  *   put:
- *     operationId: updateInteraction
  *     summary: Update an existing interaction
  *     tags: [Account Interactions]
  *     description: Updates the details of an existing interaction id within the specified Account ID. None of the fields except for the Account ID and the interaction id are required, but you can specify the type, timestamp, title, description and attendees
@@ -887,7 +884,6 @@ app.post("/accounts/:account_id/actionItems/", authModule.checkAuth, async funct
  * @openapi
  * /accounts/{account_id}/actionItems/{action_item_id}:
  *   put:
- *     operationId: updateActionItem
  *     summary: Update an action item
  *     tags: [Account Action Items]
  *     description: Updates the fields of a specific action item.
