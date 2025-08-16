@@ -81,8 +81,8 @@ function loadTools(swaggerSpec) {
     const methods = swaggerSpec.paths[path];
 
     for (const method in methods) {
-      if (!operation.operationId) continue
       const operation = methods[method];
+      if (!operation.operationId) continue
       const name = sanitizeOperationId(operation.operationId);
 
       const description = operation.description || operation.summary || "No description provided";
