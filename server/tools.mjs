@@ -4,28 +4,24 @@ function addAdditionalPropertiesRecursively(schema) {
   if (!schema || typeof schema !== "object") return;
 
   if (schema.additionalProperties === undefined && schema.properties) {
-    schema.additionalProperties = true;
+    schema.additionalProperties = false;
   }
-
-  // mark all properties as required
-  // if (schema.properties) {
-  //   schema.required = [];
-  //   for (const key of Object.keys(schema.properties)) {
-  //     schema.required.push(key);
-  //   }
-  // }
 
   // Recurse into properties
   if (schema.properties && typeof schema.properties === "object") {
     for (const key of Object.keys(schema.properties)) {
-      addAdditionalPropertiesRecursively(schema.properties[key]);
+      if (!schema.required || !schema.required.includes(key)) {
+        delete schema.properties[key];
+      } else {
+        addAdditionalPropertiesRecursively(schema.properties[key]);
+      }
     }
   }
 }
 
 function ensureObjectSchema(schema) {
   if (!schema || typeof schema !== "object") {
-    return { type: "object", properties: { additionalProperties: true } };
+    return { type: "object", properties: { additionalProperties: false } };
   }
   const out = { ...schema };
   if (out.type !== "object") out.type = "object";
