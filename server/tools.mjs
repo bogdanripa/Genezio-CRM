@@ -2,12 +2,16 @@ let tools = [];
 
 function addAdditionalPropertiesRecursively(schema) {
   if (!schema || typeof schema !== "object") return;
+  if (schema.type == "array") {
+    if (!schema.items) return;
+    schema = schema.items;
+  }
 
   if (schema.additionalProperties === undefined && schema.properties) {
     schema.additionalProperties = false;
   }
 
-  // Recurse into properties
+  // Recurse into properties  
   if (schema.properties && typeof schema.properties === "object") {
     for (const key of Object.keys(schema.properties)) {
       if (!schema.required || !schema.required.includes(key)) {

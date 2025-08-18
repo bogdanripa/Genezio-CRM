@@ -158,7 +158,7 @@ const userSchema = new mongoose.Schema({
     },
   }
 
-  const basicInteractionSchema = new mongoose.Schema(interactionJson, {
+  const basicInteractionMongooseSchema = new mongoose.Schema(interactionJson, {
     _id: false // Prevents Mongoose from adding its own _id to each subdoc
   });
 
@@ -231,7 +231,7 @@ const userSchema = new mongoose.Schema({
   const Attendee = mongoose.model('Attendee', attendeeSchema);
   const ActionItem = mongoose.model('ActionItem', actionItemSchema);
   const Interaction = mongoose.model('Interaction', interactionSchema);
-  const BasicInteraction = mongoose.model('BasicInteraction', basicInteractionSchema);
+  const BasicInteraction = mongoose.model('BasicInteraction', basicInteractionMongooseSchema);
 
   export { Users, Accounts, UserSummary, Employee, Attendee, ActionItem, BasicInteraction, Interaction, ActiveSessions };
 
