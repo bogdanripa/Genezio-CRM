@@ -879,6 +879,80 @@ app.delete("/accounts/:account_id/interactions/:interaction_id", authModule.chec
 
 /**
  * @openapi
+ * /accounts/{account_id}/interactions/{interaction_id}/field:
+ *   put:
+ *     operationId: updateInteractionField
+ *     summary: Update a single field of an interaction
+ *     tags: [Account Interactions]
+ *     description: Update a specific field (title, timestamp, or description) of an interaction for the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: account_id
+ *         in: path
+ *         required: true
+ *         description: The Account ID. The Account ID can be found by calling findByName.
+ *         schema:
+ *           type: string
+ *       - name: interaction_id
+ *         in: path
+ *         required: true
+ *         description: The ID of the interaction to update
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - field_name
+ *               - field_value
+ *             properties:
+ *               field_name:
+ *                 type: string
+ *                 enum: ["title", "timestamp", "description"]
+ *                 description: The name of the field to update. Only "title", "timestamp", or "description" are allowed.
+ *               field_value:
+ *                 type: string
+ *                 description: The new value for the field. If updating "timestamp", use a date-time string.
+ *     responses:
+ *       200:
+ *         description: Interaction field updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Interaction'
+ *       400:
+ *         description: Invalid field name or value
+ *       404:
+ *         description: Account or interaction not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.put("/accounts/:account_id/interactions/:interaction_id/field", authModule.checkAuth, async function (req, res) {
+  try {
+    const { field_name, field_value } = req.body;
+    if (!field_name) {
+      return res.status(400).send("field_name is required");
+    }
+    const interaction = await interactionModule.updateInteractionField({
+      userInfo: req.userInfo,
+      account_id: req.params.account_id,
+      interaction_id: req.params.interaction_id,
+      field_name,
+      field_value
+    });
+    res.send(interaction);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
+
+
+/**
+ * @openapi
  * /accounts/{account_id}/actionItems/:
  *   post:
  *     operationId: addActionItem
@@ -1124,7 +1198,6 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/field", authModule.ch
   }
 });
 
-
 /**
  * @openapi
  * /accounts/{account_id}/actionItems/{action_item_id}:
@@ -1248,6 +1321,8 @@ app.get("/interactions/latest", authModule.checkAuth, async function (req, res) 
     res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
 });
+
+
 
 /**
  * @openapi

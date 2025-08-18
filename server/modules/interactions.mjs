@@ -270,6 +270,41 @@ export async function unstickInteraction(userInfo, { account_id, interaction_id 
   return interaction;
 }
 
+export async function updateInteractionField(parameters) {
+  const userInfo = parameters.userInfo;
+  const accountId = parameters.account_id;
+  const interactionId = parameters.interaction_id;
+  const field_name = parameters.field_name;
+  const field_value = parameters.field_value;
+
+  const account = await getAccount(userInfo, accountId);
+
+  const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
+  if (!interaction) {
+    throw { status: 404, message: `Interaction not found.` };
+  }
+
+  if (!["title", "description", "timestamp"].includes(field_name)) {
+    throw { status: 400, message: `Invalid field name. Available fields: title, description, timestamp` };
+  }
+
+  if (field_name === "title") {
+    interaction.title = field_value;
+  } else if (field_name === "description") {
+    interaction.description = field_value;
+  } else if (field_name === "timestamp") {
+    const d = new Date(field_value);
+    if (isNaN(d)) {
+      throw { status: 400, message: `Invalid timestamp. Timestamp must be a valid date-time string.` };
+    }
+    interaction.timestamp = d;
+  }
+
+  await account.save();
+
+  return interaction;
+} 
+
 export async function getLatestInteractions({ userInfo }) {
   const accounts = await getAllAccounts(userInfo);
   const interactionsAcrossAccounts = [];
