@@ -130,6 +130,7 @@ const userSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['call', 'email', 'meeting', "whatsapp", 'note', 'status_change', 'sticky_note'],
+      required: true,
     },
     timestamp: {
       type: Date,
@@ -137,9 +138,16 @@ const userSchema = new mongoose.Schema({
     },
     title: {
       type: String,
+      required: true,
     },
-    description: String,
-    attendees: [attendeeSchema],
+    description: {
+      type: String,
+      required: true,
+    },
+    attendees: {
+      type: [attendeeSchema],
+      required: true,
+    },
     isSticky: {
       type: Boolean,
       default: false,
