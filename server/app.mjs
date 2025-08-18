@@ -836,6 +836,122 @@ app.put("/accounts/:account_id/interactions/:interaction_id", authModule.checkAu
 
 /**
  * @openapi
+ * /accounts/{account_id}/interactions/{interaction_id}/attendees:
+ *   post:
+ *     operationId: addInteractionAttendee
+ *     summary: Add an attendee to an interaction
+ *     tags: [Account Interactions]
+ *     description: Adds an attendee to the specified interaction within the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: account_id
+ *         in: path
+ *         required: true
+ *         description: The Account ID. The Account ID can be found by calling findByName.
+ *         schema:
+ *           type: string
+ *       - name: interaction_id
+ *         in: path
+ *         required: true
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the Account ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               attendee:
+ *                 type: string
+ *                 description: The attendee to add (can be a team member id, contact id, name, or email).
+ *             required: ["attendee"]
+ *     responses:
+ *       200:
+ *         description: Attendee added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Interaction'
+ *       400:
+ *         description: Invalid attendee or attendee already exists
+ *       404:
+ *         description: Account or interaction not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.post("/accounts/:account_id/interactions/:interaction_id/attendees", authModule.checkAuth, async function (req, res) {
+  try {
+    const userInfo = req.userInfo;
+    const { account_id, interaction_id } = req.params;
+    const { attendee } = req.body;
+    if (!attendee) {
+      return res.status(400).send("Attendee is required");
+    }
+    const interaction = await interactionModule.addAttendee({ userInfo, account_id, interaction_id, attendee });
+    res.send(interaction);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
+
+/**
+ * @openapi
+ * /accounts/{account_id}/interactions/{interaction_id}/attendees/{attendee_id}:
+ *   delete:
+ *     operationId: removeInteractionAttendee
+ *     summary: Remove an attendee from an interaction
+ *     tags: [Account Interactions]
+ *     description: Removes an attendee from the specified interaction within the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: account_id
+ *         in: path
+ *         required: true
+ *         description: The Account ID. The Account ID can be found by calling findByName.
+ *         schema:
+ *           type: string
+ *       - name: interaction_id
+ *         in: path
+ *         required: true
+ *         description: The interaction id. You can get a list of interaction ids by calling getAccountDetails with the Account ID
+ *         schema:
+ *           type: string
+ *       - name: attendee_id
+ *         in: path
+ *         required: true
+ *         description: The attendee id to remove.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Attendee removed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Interaction'
+ *       404:
+ *         description: Account, interaction, or attendee not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.delete("/accounts/:account_id/interactions/:interaction_id/attendees/:attendee_id", authModule.checkAuth, async function (req, res) {
+  try {
+    const userInfo = req.userInfo;
+    const { account_id, interaction_id, attendee_id } = req.params;
+    const interaction = await interactionModule.removeAttendee({ userInfo, account_id, interaction_id, attendee_id });
+    res.send(interaction);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
+
+
+/**
+ * @openapi
  * /accounts/{account_id}/interactions/{interaction_id}:
  *   delete:
  *     operationId: deleteInteraction

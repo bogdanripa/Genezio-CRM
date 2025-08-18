@@ -132,6 +132,85 @@ export async function addInteraction(parameters) {
   return newInteraction;
 }
 
+export async function addAttendee(parameters) {
+  const userInfo = parameters.userInfo;
+  const accountId = parameters.account_id;
+  const interactionId = parameters.interaction_id;
+  const attendee = parameters.attendee;
+
+  const account = await getAccount(userInfo, accountId);
+  const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
+  if (!interaction) {
+    throw { status: 404, message: `Interaction not found.` };
+  }
+
+  const attendees = fixAttendees([attendee], account);
+  if (typeof attendees === 'string') {
+    // get a list of account team members and contacts
+    let attendeesList = [];
+    if (account.teamMembers && account.teamMembers.length > 0) {
+      attendeesList = account.teamMembers.map((member) => member.name);
+    }
+    if (account.employees && account.employees.length > 0) {
+      attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
+    }
+    attendeesList.push(account.owner.name);
+    throw { status: 400, message: `${attendees}. Available attendees are: ${attendeesList.join(', ')}` };
+  }
+
+  // Check if attendee is already present in interaction.attendees
+  if (interaction.attendees && interaction.attendees.some(a => a.id === attendees[0].id)) {
+    throw { status: 400, message: `Attendee already present in this interaction.` };
+  }
+
+  interaction.attendees.push(attendees[0]);
+
+  if (account.owner.id !== userInfo.userId)
+    await sendNotification(account.owner.phone, `${userInfo.name} added ${attendees[0].name} to an existing ${interaction.type} (${interaction.title}) on ${account.name}.`);
+
+  await account.save();
+
+  return interaction;
+}
+
+export async function removeAttendee(parameters) {
+  const userInfo = parameters.userInfo;
+  const accountId = parameters.account_id;
+  const interactionId = parameters.interaction_id;
+  const attendeeId = parameters.attendee_id;
+
+  const account = await getAccount(userInfo, accountId);
+  const interaction = account.interactions.find((interaction) => interaction.id === interactionId);
+  if (!interaction) {
+    throw { status: 404, message: `Interaction not found.` };
+  }
+
+  // Find the attendee in the interaction's attendees list
+  let attendees = interaction.attendees.filter(a => a.id === attendeeId);
+  if (!attendees || attendees.length === 0) {
+    // get a list of account team members and contacts
+    let attendeesList = [];
+    if (account.teamMembers && account.teamMembers.length > 0) {
+      attendeesList = account.teamMembers.map((member) => member.name);
+    }
+    if (account.employees && account.employees.length > 0) {
+      attendeesList = attendeesList.concat(account.employees.map((employee) => employee.name));
+    }
+    attendeesList.push(account.owner.name);
+    throw { status: 400, message: `Cannot find attendee to remove. Available attendees are: ${attendeesList.join(', ')}` };
+  }
+
+  // Remove the attendee
+  interaction.attendees = interaction.attendees.filter(a => a.id !== attendeeId);
+
+  if (account.owner.id !== userInfo.userId)
+    await sendNotification(account.owner.phone, `${userInfo.name} removed ${attendees[0].name} from ${interaction.type} (${interaction.title}) on ${account.name}.`);
+
+  await account.save();
+
+  return interaction;
+}
+
 export async function updateInteraction(parameters) {
   const userInfo = parameters.userInfo;
   const accountId = parameters.account_id;
