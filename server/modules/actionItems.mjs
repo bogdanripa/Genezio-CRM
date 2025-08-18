@@ -117,6 +117,45 @@ export async function updateActionItem(parameters) {
   return actionItem;
 }
 
+export async function updateActionItemField(parameters) {
+  const userInfo = parameters.userInfo;
+  const accountId = parameters.account_id;
+  const actionItemId = parameters.action_item_id;
+  const field_name = parameters.field_name;
+  const field_value = parameters.field_value;
+  const account = await getAccount(userInfo, accountId);
+  
+  const actionItem = account.actionItems.find((item) => item.id === actionItemId);
+  if (!actionItem) {
+    let actionItems = "No action items on this account.";
+    if (account.actionItems && account.actionItems.length > 0) {
+      actionItems = account.actionItems.map((item) => `${item.title} (Action Item ID: ${item.id})`).join(", ");
+    }
+    throw { status: 404, message: `Action item not found. Available action items: ${actionItems}` };
+  }
+
+  if (!["title", "dueDate"].includes(field_name)) {
+    throw { status: 400, message: `Invalid field name. Available fields: title, dueDate` };
+  }
+
+  if (field_name === "title") {
+    actionItem.title = field_value;
+  } else if (field_name === "dueDate") {
+    const d = new Date(field_value);
+    if (isNaN(d)) {
+      throw { status: 400, message: `Invalid due date. Due date must be a valid date.` };
+    }
+    actionItem.dueDate = d;
+  }
+
+  await account.save();
+
+  if (account.owner.id !== userInfo.userId)
+    await sendNotification(account.owner.phone, `${userInfo.name} updated an action item (${actionItem.title}) on ${account.name}.`);
+
+  return actionItem;
+}
+
 export async function completeActionItem({userInfo, account_id, action_item_id }) {
   const account = await getAccount(userInfo, account_id);
   const actionItem = account.actionItems.find((item) => item.id === action_item_id);

@@ -290,7 +290,6 @@ app.put("/accounts/:account_id", authModule.checkAuth, async function (req, res)
  * @openapi 
  * /accounts/{account_id}:
  *   delete:
- *     operationId: deleteAccount
  *     summary: Delete an account by account_id
  *     tags: [Accounts]
  *     security:
@@ -1052,6 +1051,79 @@ app.put("/accounts/:account_id/actionItems/:action_item_id/complete", authModule
     res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
 });
+
+/**
+ * @openapi
+ * /accounts/{account_id}/actionItems/{action_item_id}/field:
+ *   put:
+ *     operationId: updateActionItemField
+
+*     summary: "Updates a single field of an action item"
+ *     tags: [Account Action Items]
+ *     description: "Updates a specific field of a specific action item. The field name is the name of the field to update, and the field value is the new value for the field."
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: account_id
+ *         in: path
+ *         required: true
+ *         description: "The Account ID. The Account ID can be found by calling findByName."
+ *         schema:
+ *           type: string
+ *       - name: action_item_id
+ *         in: path
+ *         required: true
+ *         description: "The ID of the action item to update"
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - field_name
+ *               - field_value
+ *             properties:
+ *               field_name:
+ *                 type: string
+ *                 enum: ["title", "dueDate"]
+ *                 description: "The name of the field to update. The field name can be one of the following: title, dueDate. If you are sneding a dureDate, make sure to format it as a date-time string."
+ *               field_value:
+ *                 type: string
+ *                 description: "The new value for the field"
+ *     responses:
+ *       200:
+ *         description: "Action item field updated successfully"
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ActionItem'
+ *       404:
+ *         description: "Account or action item not found"
+ *       401:
+ *         description: Unauthorized
+ */
+app.put("/accounts/:account_id/actionItems/:action_item_id/field", authModule.checkAuth, async function (req, res) {
+  try {
+    const { field_name, field_value } = req.body;
+    if (!field_name) {
+      return res.status(400).send("field_name is required");
+    }
+    const actionItem = await actionItemsModule.updateActionItemField({
+      userInfo: req.userInfo,
+      account_id: req.params.account_id,
+      action_item_id: req.params.action_item_id,
+      field_name,
+      field_value
+    });
+    res.send(actionItem);
+  } catch (e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
+
 
 /**
  * @openapi

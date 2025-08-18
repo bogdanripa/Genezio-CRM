@@ -77,6 +77,9 @@ export async function updateContactField(parameters) {
 
     await account.save();
 
+    if (account.owner.id !== userInfo.userId)
+        await sendNotification(account.owner.phone, `${userInfo.name} updated ${contact.name}'s details on ${account.name}.`);
+
     return contact;
 }
 
