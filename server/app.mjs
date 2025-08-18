@@ -707,10 +707,12 @@ app.delete("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, a
  *                 type: string
  *                 enum: ["name", "role", "email", "phone", "notes"]
  *                 description: The field name to update
- *                 required: true
  *               field_value:
  *                 type: string
- *                 required: true
+ *                 description: The new value for the field
+ *             required:
+ *               - field_name
+ *               - field_value
  *     responses:
  *       200:
  *         description: Contact updated successfully
