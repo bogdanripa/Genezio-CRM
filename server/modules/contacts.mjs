@@ -52,6 +52,34 @@ export async function updateContact(parameters) {
     return contact;
 }
 
+export async function updateContactField(parameters) {
+    const userInfo = parameters.userInfo;
+    const accountId = parameters.account_id;
+    const contactId = parameters.contact_id;
+    const fieldName = parameters.field_name;
+    const fieldValue = parameters.field_value;
+
+    const account = await getAccount(userInfo, accountId);
+  
+    const contact = account.employees.find((contact) => contact.id === contactId);
+    if (!contact) {
+        const contacts = (account.employees || []).map((m) => `${m.name} (contact id: ${m.id})`).join(", ");
+        throw {status: 404, message: `Contact not found. Account contacts are: ${contacts}`}
+    }
+
+    // validate field name
+    const validFieldNames = ["name", "role", "email", "phone", "notes"];
+    if (!validFieldNames.includes(fieldName)) {
+        throw {status: 400, message: `Invalid field name. Valid field names are: ${validFieldNames.join(", ")}`};
+    }
+
+    contact[fieldName] = fieldValue;
+
+    await account.save();
+
+    return contact;
+}
+
 export async function removeContact(parameters) {
     const userInfo = parameters.userInfo;
     const accountId = parameters.account_id;

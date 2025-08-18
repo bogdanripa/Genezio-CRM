@@ -675,6 +675,68 @@ app.delete("/accounts/:account_id/contacts/:contact_id", authModule.checkAuth, a
 
 /**
  * @openapi
+ * /accounts/{account_id}/contacts/{contact_id}/field:
+ *   put:
+ *     operationId: updateContactField
+ *     summary: Update an existing contact's field
+ *     tags: [Account Contacts]
+ *     description: Update a specific field for the contact (employee) details associated with the specified account.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: account_id
+ *         in: path
+ *         required: true
+ *         description: The Account ID. The Account ID can be found by calling findByName.
+ *         schema:
+ *           type: string
+ *       - name: contact_id
+ *         in: path
+ *         required: true
+ *         description: The ID of the contact to update
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               field_name:
+ *                 type: string
+ *                 enum: ["name", "role", "email", "phone", "notes"]
+ *                 description: The field name to update
+ *                 required: true
+ *               field_value:
+ *                 type: string
+ *                 required: true
+ *     responses:
+ *       200:
+ *         description: Contact updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Employee'
+ *       404:
+ *         description: Account or contact not found
+ *       401:
+ *         description: Unauthorized
+ */
+app.put('/accounts/{account_id}/contacts/{contact_id}/field', authModule.checkAuth, async function (req, res) {
+  try {
+    req.body.account_id = req.params.account_id;
+    req.body.contact_id = req.params.contact_id;
+    req.body.userInfo = req.userInfo;
+    const contact = await cotactsModule.updateContactField(req.body);
+    res.send(contact);
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
+
+/**
+ * @openapi
  * /accounts/{account_id}/interactions:
  *   post:
  *     operationId: addInteraction
