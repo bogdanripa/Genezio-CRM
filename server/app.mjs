@@ -12,6 +12,7 @@ import * as cotactsModule from './modules/contacts.mjs';
 import * as interactionModule from "./modules/interactions.mjs";
 import * as exploreModule from "./modules/explore.mjs";
 import * as authModule from "./modules/auth.mjs";
+import * as notificationsModule from "./modules/notifications.mjs";
 import emailAuthRouter from './emailCodeAuth.mjs';
 import {swaggerRouter, loadSwagger} from './modules/swagger.mjs'
 import { loadMCPTools, mcpRouter } from "./modules/mcp.mjs";
@@ -47,6 +48,41 @@ app.put("/finalizeSignUp", authModule.checkAuth, async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /feedback:
+ *   post:
+ *     summary: Send feedback about Maya CRM (bug reports, feature requests, etc.). The feedback will reach the Maya CRM team.
+ *     tags: [Feedback]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *             required:
+ *               - message
+ *     responses:
+ *       200:
+ *         description: Feedback sent successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
+app.post("/feedback", authModule.checkAuth, async function (req, res) {
+  try {
+    await notificationsModule.sendFeedback(req.userInfo.name, req.userInfo.email, req.userInfo.phone, req.body.message);
+    res.status(200).send();
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
 
 /**
  * @openapi
@@ -1504,7 +1540,7 @@ app.post('/cron', async (req, res) => {
     }
     console.log(`Working on user ${userId} (phone: ${phone}):`);
     promises.push(
-      sendNotification(phone, messages.join('\n'))
+      notificationsModule.sendNotification(phone, messages.join('\n'))
         .then(() => console.log(`Sent ${messages.length} messages to ${phone}`))
         .catch((err) => console.error(`Failed to send messages to ${phone}:`, err))
     );

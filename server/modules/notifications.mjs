@@ -14,4 +14,8 @@ async function sendNotification(phone, message) {
   console.log(`Notification sent to user ${phone}: ${message}`);
 }
 
-export {sendNotification}
+async function sendFeedback(name, email, phone, message) {
+  await sendNotification(process.env.FEEDBACK_PHONE, `Feedback from ${name} (${email}, ${phone}):\n\n${message}`);
+}
+
+export {sendNotification, sendFeedback}
