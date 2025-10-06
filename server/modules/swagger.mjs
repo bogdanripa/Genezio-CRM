@@ -13,9 +13,9 @@ function loadSwagger() {
   const swaggerDefinition = {
     openapi: '3.0.0',
     info: {
-      title: 'Genezio CRM APIs',
+      title: 'Maya CRM APIs',
       version: '1.0.0',
-      description: 'OpenAPI spec for Genezio CRM APIs',
+      description: 'OpenAPI spec for Maya CRM APIs',
     },
     components: {
       securitySchemes: {

@@ -43,7 +43,7 @@ export async function init_auth({ email }) {
 
   const user = await Users.findOne({ email: email });
   if (!user) {
-    return "https://genezio-crm.app.genez.io/login?s="
+    return "https://app.mayacrm.ai/login?s="
   }
 
   // generate a 8 digits code
@@ -52,8 +52,8 @@ export async function init_auth({ email }) {
   const response = await MailService.sendMail({
       emailServiceToken: process.env.EMAIL_SERVICE_TOKEN,
       to: email,
-      subject: "Your Genezio CRM Authentication Code",
-      text: "The auth code to authenticate your Genezio CRM account is: " + code,
+      subject: "Your Maya CRM Authentication Code",
+      text: "The auth code to authenticate your Maya CRM account is: " + code,
   });
 
   if (!response.success) {
@@ -79,7 +79,7 @@ function hexDec(hex) {
 async function getToken(userId) {
   const authSession = await ActiveSessions.findOne({ userId: hexInc(userId) }).sort({ date: -1 });
   if (!authSession) {
-      throw {status: 500, message: "Session expired. Please log in to the Genezio CRM web interface again and then come back."};
+      throw {status: 500, message: "Session expired. Please log in to the Maya CRM web interface again and then come back."};
   }
   return authSession.token;
 }
@@ -90,7 +90,7 @@ export async function sign_in({ email, phone, auth_code }) {
   }
   const user = await Users.findOne({ email });
   if (!user) {
-    throw {status: 404, message: "User's email was not found. They can create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate."};
+    throw {status: 404, message: "User's email was not found. They can create an account at https://app.mayacrm.ai/ and then come back to authenticate."};
   }
   
   if (user.emailCode !== auth_code) {
@@ -122,7 +122,7 @@ export async function getUserDataFromToken({ auth_token }) {
 
   const authSession = await ActiveSessions.findOne({ token: auth_token });
   if (!authSession) {
-      throw {status: 500, message: "Session expired. Please log in to the Genezio CRM web interface again and then come back."};
+      throw {status: 500, message: "Session expired. Please log in to the Maya CRM web interface again and then come back."};
   }
 
   const user = await Users.findOne({ userId: hexDec(authSession.userId) });

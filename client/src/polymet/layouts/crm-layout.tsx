@@ -77,7 +77,7 @@ export default function CrmLayout({ children }) {
           to="/dashboard"
           className="text-xl font-bold tracking-tight flex items-center"
         >
-          Genezio CRM
+          Maya CRM
         </Link>
         {isMobile && (
           <Button

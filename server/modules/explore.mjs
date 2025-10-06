@@ -9,7 +9,7 @@ function findOneTerm(term, accounts) {
       results.push({
         type: "account",
         account_id: account.id,
-        url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
+        url: `https://app.mayacrm.ai/accounts/${account.id}`,
         name: account.name
       });
     }
@@ -27,7 +27,7 @@ function findOneTerm(term, accounts) {
           account: {
             account_id: account.id,
             name: account.name,
-            url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
+            url: `https://app.mayacrm.ai/accounts/${account.id}`,
           },
         });
       }
@@ -44,7 +44,7 @@ function findOneTerm(term, accounts) {
           account: {
             account_id: account.id,
             name: account.name,
-            url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
+            url: `https://app.mayacrm.ai/accounts/${account.id}`,
           },
         });
       }
@@ -59,7 +59,7 @@ function findOneTerm(term, accounts) {
           account: {
             account_id: account.id,
             name: account.name,
-            url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
+            url: `https://app.mayacrm.ai/accounts/${account.id}`,
           },
         });
       }
@@ -74,7 +74,7 @@ function findOneTerm(term, accounts) {
           account: {
             account_id: account.id,
             name: account.name,
-            url: `https://genezio-crm.app.genez.io/accounts/${account.id}`,
+            url: `https://app.mayacrm.ai/accounts/${account.id}`,
           },
         });
       }
