@@ -1,3 +1,5 @@
+import { MailService } from "@genezio/email-service";
+
 async function sendNotification(phone, message) {
   if (!phone) return;
 
@@ -15,7 +17,12 @@ async function sendNotification(phone, message) {
 }
 
 async function sendFeedback(name, email, phone, message) {
-  await sendNotification(process.env.FEEDBACK_PHONE, `Feedback from ${name} (${email}, ${phone}):\n\n${message}`);
+  await MailService.sendMail({
+    emailServiceToken: process.env.EMAIL_SERVICE_TOKEN,
+    to: "maya@mayacrm.ai",
+    subject: "Maya CRM Feedback",
+    text: `Feedback from ${name} (${email}, ${phone}):\n\n${message}`,
+  });
 }
 
 export {sendNotification, sendFeedback}
