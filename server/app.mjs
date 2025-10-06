@@ -52,6 +52,7 @@ app.put("/finalizeSignUp", authModule.checkAuth, async function (req, res) {
  * @openapi
  * /feedback:
  *   post:
+ *     operationId: sendFeedback
  *     summary: Send feedback about Maya CRM (bug reports, feature requests, etc.). The feedback will reach the Maya CRM team.
  *     tags: [Feedback]
  *     security:
@@ -338,6 +339,7 @@ app.put("/accounts/:account_id", authModule.checkAuth, async function (req, res)
  * @openapi 
  * /accounts/{account_id}:
  *   delete:
+ *     operationId: deleteAccount
  *     summary: Delete an account by account_id
  *     tags: [Accounts]
  *     security:
