@@ -33,7 +33,8 @@ const toolsMap = {
   ...teamMembersModule,
   ...cotactsModule,
   ...interactionModule,
-  ...exploreModule
+  ...exploreModule,
+  ...notificationsModule
 }
 loadMCPTools(toolsMap);
 app.use('/mcp', mcpRouter)
