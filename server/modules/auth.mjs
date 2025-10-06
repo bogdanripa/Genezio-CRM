@@ -36,14 +36,14 @@ function generate8DigitCode() {
   return code;
 }
 
-export async function initAuth({ email }) {
+export async function init_auth({ email }) {
   if (!email) {
-    throw {status: 401, message: "The user's email is required in the initAuth call."}
+    throw {status: 401, message: "The user's email is required in the init_auth call."}
   }
 
   const user = await Users.findOne({ email: email });
   if (!user) {
-      throw { status: 404, message: "Could not identify you by email. You need to create an account at https://genezio-crm.app.genez.io/ and then come back to authenticate." };
+    return "https://genezio-crm.app.genez.io/login?s="
   }
 
   // generate a 8 digits code
@@ -84,9 +84,9 @@ async function getToken(userId) {
   return authSession.token;
 }
 
-export async function authenticate({ email, phone, auth_code }) {
+export async function sign_in({ email, phone, auth_code }) {
   if (!email || !auth_code) {
-    throw {status: 401, message: "The user's email and auth_code are both required in the authenticate call."}
+    throw {status: 401, message: "The user's email and auth_code are both required in the sign_in call."}
   }
   const user = await Users.findOne({ email });
   if (!user) {
@@ -136,4 +136,31 @@ export async function getUserDataFromToken({ auth_token }) {
     email: user.email,
     phone: user.phone,
   }
+}
+
+export async function finalizeSignUp({ email, s }) {
+  const user = await Users.findOne({ email });
+  if (!user) {
+    throw {status: 404, message: "User not found."};
+  }
+  const token = await getToken(user.userId);
+  const name = user.name;
+
+  const response = await fetch(process.env.WA_URL + 'signUpUser', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.EMAIL_CODE_AUTH_SECRET}`,
+    },
+    body: JSON.stringify({ secret: s, email, name, token }),
+  })
+
+  if (!response.ok) {
+    throw {status: 500, message: "Failed to sign up user."};
+  }
+
+  const responseData = await response.json();
+  user.phone = responseData.phone;
+  await user.save();
+
 }

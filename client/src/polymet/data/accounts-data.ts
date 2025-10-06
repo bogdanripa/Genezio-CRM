@@ -192,3 +192,8 @@ export const getLatestInteractions = async(): Promise<any[]> => {
   const response = await axios.get('/interactions/latest');
   return response.data;
 }
+
+export const finalizeSignUp = async(s: string): Promise<void> => {
+  const response = await axios.put(`/finalizeSignUp`, { s });
+  return response.data;
+}

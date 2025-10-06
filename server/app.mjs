@@ -36,6 +36,17 @@ const toolsMap = {
 }
 loadMCPTools(toolsMap);
 app.use('/mcp', mcpRouter)
+
+
+app.put("/finalizeSignUp", authModule.checkAuth, async function (req, res) {
+  try {
+    await authModule.finalizeSignUp({email: req.userInfo.email, s: req.body.s});
+  } catch(e) {
+    res.status(e.status || 500).send(e.message || "Internal Server Error");
+  }
+});
+
+
 /**
  * @openapi
  * /users:

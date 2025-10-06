@@ -1,5 +1,5 @@
 import express from "express";
-import { initAuth, authenticate } from "./modules/auth.mjs";
+import { init_auth, sign_in } from "./modules/auth.mjs";
 
 const router = express.Router();
 
@@ -10,13 +10,13 @@ router.post("/init", async function (req, res, _next) {
     }
 
     try {
-        return await initAuth({ email });
+        return await init_auth({ email });
     } catch(e) {
         res.status(e.status || 500, e.message || "Internal Server Error");
     }
 });
 
-router.post("/authenticate", async function (req, res, _next) {
+router.post("/sign_in", async function (req, res, _next) {
     const email = req.body.email;
     const phone = req.body.phone; 
     const code = req.body.code;
@@ -26,7 +26,7 @@ router.post("/authenticate", async function (req, res, _next) {
     }
 
     try {
-        return await authenticate({email, phone, code});
+        return await sign_in({email, phone, code});
     } catch(e) {
         res.status(e.status || 500, e.message || "Internal Server Error");
     }

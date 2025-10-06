@@ -158,7 +158,7 @@ function loadTools(swaggerSpec) {
 const authTools = [
   {
     type: "function",
-    name: "initAuth",
+    name: "init_auth",
     description: `Initiates the authentication for a given user. This function will find the user by email and, of found, will send a auth code to the users' email that they have to enter later on.`,
     parameters: ensureObjectSchema({
       type: "object",
@@ -173,7 +173,7 @@ const authTools = [
   },
   {
     type: "function",
-    name: "authenticate",
+    name: "sign_in",
     description: `Authenticates a given user. Receives the user's email and a auth code and returns an auth token.`,
     parameters: ensureObjectSchema({
       type: "object",

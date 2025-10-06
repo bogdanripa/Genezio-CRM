@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
 import { AuthService } from "@genezio/auth";
-import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { finalizeSignUp } from "@/polymet/data/accounts-data";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,6 +14,13 @@ export default function LoginPage() {
       await AuthService.getInstance().googleRegistration(
         credentialResponse.credential!
       );
+
+      // if we have a URL parameter called "s"
+      const searchParams = new URLSearchParams(window.location.search);
+      const s = searchParams.get("s");
+      if (s) {
+        await finalizeSignUp(s);
+      }
 
       console.log("Login Success");
       navigate("/");
@@ -53,13 +60,6 @@ export default function LoginPage() {
         <p className="mt-1">
           Users will only see accounts from their email domain
         </p>
-      </div>
-
-      {/* Add a direct link to dashboard for better routing */}
-      <div className="mt-4">
-        <Link to="/dashboard" className="text-primary hover:underline">
-          Go to Dashboard
-        </Link>
       </div>
     </div>
   );
