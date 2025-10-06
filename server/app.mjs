@@ -41,6 +41,7 @@ app.use('/mcp', mcpRouter)
 app.put("/finalizeSignUp", authModule.checkAuth, async function (req, res) {
   try {
     await authModule.finalizeSignUp({email: req.userInfo.email, s: req.body.s});
+    res.status(200).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");
   }
