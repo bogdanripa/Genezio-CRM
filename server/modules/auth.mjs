@@ -51,6 +51,7 @@ export async function init_auth({ email }) {
 
   const response = await MailService.sendMail({
       emailServiceToken: process.env.EMAIL_SERVICE_TOKEN,
+      from: "maya@mayacrm.ai",
       to: email,
       subject: "Your Maya CRM Authentication Code",
       text: "The auth code to authenticate your Maya CRM account is: " + code,
