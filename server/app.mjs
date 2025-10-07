@@ -79,7 +79,7 @@ app.put("/finalizeSignUp", authModule.checkAuth, async function (req, res) {
  */
 app.post("/feedback", authModule.checkAuth, async function (req, res) {
   try {
-    await notificationsModule.sendFeedback(req.userInfo.name, req.userInfo.email, req.userInfo.phone, req.body.message);
+    await notificationsModule.sendFeedback({name: req.userInfo.name, email: req.userInfo.email, phone: req.userInfo.phone, message: req.body.message});
     res.status(200).send();
   } catch(e) {
     res.status(e.status || 500).send(e.message || "Internal Server Error");

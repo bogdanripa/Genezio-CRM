@@ -16,7 +16,7 @@ async function sendNotification(phone, message) {
   console.log(`Notification sent to user ${phone}: ${message}`);
 }
 
-async function sendFeedback(name, email, phone, message) {
+async function sendFeedback({name, email, phone, message}) {
   await MailService.sendMail({
     emailServiceToken: process.env.EMAIL_SERVICE_TOKEN,
     to: "maya@mayacrm.ai",
