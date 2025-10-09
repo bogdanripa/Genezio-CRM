@@ -86,15 +86,26 @@ rpc.addMethod("tools/call", async function ({ name, arguments: args }) {
   }
 
   try {
-      const result = await toolsMap[name](args);
-      console.log(`tools/call tesult: ${JSON.stringify(result)}`)
-      return result;
-  } catch (err) {
-      console.error(`tools/call error in ${name}: ${JSON.stringify(err)}`);
-      throw {
-          code: httpStatusToJsonRpcErrorCode(err.status || 500),
-          message: err.message || "Internal Server Error"
-      };
+        const result = await toolsMap[name](args);
+        console.log(`tools/call tesult: ${JSON.stringify(result)}`)
+        const content = [(
+            typeof result === "string"
+            ? { type: "text", text: result }
+            : { type: "json", json: result ?? null }
+        )];
+  
+        return { content };
+    } catch (err) {
+        console.error(`tools/call error in ${name}: ${JSON.stringify(err)}`);
+        return {
+            isError: true,
+            content: [
+                {
+                    type: "text",
+                    text: err.message || "Internal Server Error"
+                }
+            ]
+        };
   }
 });
 
