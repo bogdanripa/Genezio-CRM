@@ -148,7 +148,7 @@ function loadTools(swaggerSpec) {
         type: "function",
         name,
         description,
-        parameters: parametersSchema
+        inputSchema: parametersSchema
       });
     }
   }
@@ -160,7 +160,7 @@ const authTools = [
     type: "function",
     name: "init_auth",
     description: `Initiates the authentication for a given user. This function will find the user by email and, of found, will send a auth code to the users' email that they have to enter later on.`,
-    parameters: ensureObjectSchema({
+    inputSchema: ensureObjectSchema({
       type: "object",
       required: ["email"],
       properties: {
@@ -175,7 +175,7 @@ const authTools = [
     type: "function",
     name: "sign_in",
     description: `Authenticates a given user. Receives the user's email and a auth code and returns an auth token.`,
-    parameters: ensureObjectSchema({
+    inputSchema: ensureObjectSchema({
       type: "object",
       required: ["email", "auth_code"],
       properties: {
@@ -194,7 +194,7 @@ const authTools = [
     type: "function",
     name: "getUserDataFromToken",
     description: "Gets user details - like their name and email from an auth token",
-    parameters: ensureObjectSchema({
+    inputSchema: ensureObjectSchema({
       type: "object",
       required: ["auth_token"],
       properties: {
