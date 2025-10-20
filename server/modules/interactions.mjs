@@ -71,10 +71,6 @@ export async function addInteraction(parameters) {
     throw { status: 400, message: "Interaction type is required" };
   }
 
-  if (!parameters.description) {
-    throw { status: 400, message: "Description is required" };
-  }
-
   const interactionType = parameters.type.toLowerCase();
 
   const validTypes = ['call', 'email', 'meeting', 'whatsapp', 'note', 'status_change', 'sticky_note'];
